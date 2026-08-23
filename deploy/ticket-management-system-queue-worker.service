@@ -1,0 +1,24 @@
+[Unit]
+Description=Ticket Management System queue worker (php artisan queue:work)
+After=network.target mysql.service
+
+[Service]
+Type=simple
+# Matches deploy.sh's own WEB_USER/APP_DIR defaults. If those are ever
+# overridden via env vars for a given deployment, update User/Group and
+# WorkingDirectory/ExecStart below to match — this file is installed
+# as-is by deploy.sh, not templated.
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ticket-management-system
+ExecStart=/usr/bin/php /var/www/ticket-management-system/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+# --max-time exits the worker cleanly once an hour; Restart=always brings it
+# straight back up on fresh code/config — the standard Laravel pattern for
+# a long-running worker that would otherwise keep running stale opcode-
+# cached PHP indefinitely after a deploy (see deploy.sh's own explicit
+# `systemctl restart` of this unit, for the same reason php-fpm needs one).
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
