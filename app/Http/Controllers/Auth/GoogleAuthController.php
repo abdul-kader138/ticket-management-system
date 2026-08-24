@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Filament\Pages\FlightSearch;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -65,7 +66,7 @@ class GoogleAuthController extends Controller
         Filament::auth()->login($user);
         session()->regenerate();
 
-        return redirect()->intended(Filament::getUrl());
+        return redirect()->intended(FlightSearch::getUrl());
     }
 
     private function failed(string $message): RedirectResponse

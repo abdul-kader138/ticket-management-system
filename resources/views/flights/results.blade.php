@@ -11,27 +11,16 @@
 </head>
 <body class="bg-[var(--bg)] text-[var(--fg)] antialiased min-h-screen">
 
-    <header class="bg-[var(--card)] border-b border-[var(--card-border)]">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div>
-                <h1 class="text-lg font-semibold text-[var(--fg)]">
-                    {{ \App\Models\Setting::get('app_name', config('app.name', 'Flight Search')) }}
-                </h1>
-            </div>
-            <div class="flex items-center gap-4 text-sm">
-                @if(auth()->user()?->canAccessPanel(\Filament\Facades\Filament::getDefaultPanel()))
-                    <a href="{{ \Filament\Facades\Filament::getUrl() }}" class="text-[var(--muted)] hover:text-[var(--fg)]">Admin Dashboard</a>
-                @endif
-                <a href="{{ route('flights.search') }}" class="text-[var(--brand)] hover:underline">&larr; New search</a>
-            </div>
-        </div>
-    </header>
-
+    {{-- This view is embedded via an iframe by App\Filament\Pages\FlightSearch, --}}
+    {{-- which already provides the app header/sidebar — no header here. --}}
     <main class="max-w-6xl mx-auto px-4 py-8">
 
-        <h2 class="text-base font-semibold text-[var(--fg)] mb-4">
-            {{ count($offers) }} {{ Str::plural('flight', count($offers)) }} found
-        </h2>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-semibold text-[var(--fg)]">
+                {{ count($offers) }} {{ Str::plural('flight', count($offers)) }} found
+            </h2>
+            <a href="{{ route('flights.embed') }}" class="text-sm text-[var(--brand)] hover:underline">&larr; New search</a>
+        </div>
 
         @if(count($offers) === 0)
             <div class="bg-[var(--card)] rounded-xl border border-[var(--card-border)] p-8 text-center text-[var(--muted)]">

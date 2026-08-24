@@ -27,8 +27,8 @@ class UserResourceTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('super_admin');
 
-        $this->actingAs($admin)->get('/admin/users')->assertOk();
-        $this->actingAs($admin)->get('/admin/users/create')->assertOk();
+        $this->actingAs($admin)->get('/users')->assertOk();
+        $this->actingAs($admin)->get('/users/create')->assertOk();
     }
 
     public function test_operator_cannot_access_user_resource(): void
@@ -36,7 +36,7 @@ class UserResourceTest extends TestCase
         $operator = User::factory()->create();
         $operator->assignRole('operator');
 
-        $this->actingAs($operator)->get('/admin/users')->assertForbidden();
+        $this->actingAs($operator)->get('/users')->assertForbidden();
     }
 
     public function test_panel_user_cannot_access_user_resource(): void
@@ -44,7 +44,7 @@ class UserResourceTest extends TestCase
         $staff = User::factory()->create();
         $staff->assignRole('panel_user');
 
-        $this->actingAs($staff)->get('/admin/users')->assertForbidden();
+        $this->actingAs($staff)->get('/users')->assertForbidden();
     }
 
     public function test_super_admin_can_create_a_user_with_roles(): void

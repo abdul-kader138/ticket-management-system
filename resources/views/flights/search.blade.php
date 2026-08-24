@@ -11,39 +11,8 @@
 </head>
 <body class="bg-[var(--bg)] text-[var(--fg)] antialiased min-h-screen">
 
-    <header class="bg-[var(--card)] border-b border-[var(--card-border)]">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div>
-                <h1 class="text-lg font-semibold text-[var(--fg)]">
-                    {{ \App\Models\Setting::get('app_name', config('app.name', 'Flight Search')) }}
-                </h1>
-                @if($tagline = \App\Models\Setting::get('app_tagline'))
-                    <p class="text-xs text-[var(--muted)]">{{ $tagline }}</p>
-                @endif
-            </div>
-            <nav class="text-sm">
-                @auth
-                    <div class="flex items-center gap-3">
-                        @if(auth()->user()->canAccessPanel(\Filament\Facades\Filament::getDefaultPanel()))
-                            <a href="{{ \Filament\Facades\Filament::getUrl() }}" class="text-[var(--muted)] hover:text-[var(--fg)]">Admin Dashboard</a>
-                            <span class="text-[var(--card-border)]">|</span>
-                        @endif
-                        <span class="text-[var(--muted)]">Hi, {{ auth()->user()->first_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="text-[var(--muted)] hover:text-[var(--fg)]">Sign out</button>
-                        </form>
-                    </div>
-                @else
-                    <div class="flex items-center gap-4">
-                        <a href="{{ route('login') }}" class="text-[var(--muted)] hover:text-[var(--fg)]">Sign in</a>
-                        <a href="{{ route('register') }}" class="bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white rounded-md px-4 py-1.5 font-medium">Sign up</a>
-                    </div>
-                @endauth
-            </nav>
-        </div>
-    </header>
-
+    {{-- This view is embedded via an iframe by App\Filament\Pages\FlightSearch, --}}
+    {{-- which already provides the app header/sidebar — no header here. --}}
     <main class="max-w-7xl mx-auto px-4 py-8">
 
         @if(session('status'))

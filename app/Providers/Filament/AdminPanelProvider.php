@@ -7,6 +7,7 @@ use App\Filament\Auth\Login;
 use App\Filament\Auth\Register;
 use App\Filament\Auth\ResetPassword;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\FlightSearch;
 use App\Models\Setting;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Enums\ThemeMode;
@@ -14,7 +15,6 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\NavigationItem;
 use Filament\Pages\Auth\EmailVerification\EmailVerificationPrompt;
 use Filament\Pages\Auth\PasswordReset\RequestPasswordReset;
 use Filament\Panel;
@@ -54,7 +54,8 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('')
+            ->homeUrl(fn () => FlightSearch::getUrl())
             ->login(Login::class)
             ->registration(Register::class)
             ->passwordReset(RequestPasswordReset::class, ResetPassword::class)
@@ -81,16 +82,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([])
-            ->navigationItems([
-                // Every panel user (staff and customer-role accounts alike)
-                // shares the same `users` table and `web` guard as the public
-                // site, so anyone who can log in here can already reach
-                // /flights directly — this just makes that discoverable.
-                NavigationItem::make('Search Flights')
-                    ->url(fn () => route('flights.search'))
-                    ->icon('heroicon-o-paper-airplane')
-                    ->sort(-1),
-            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

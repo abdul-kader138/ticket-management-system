@@ -28,7 +28,7 @@ class SystemSettingsPageTest extends TestCase
     {
         $this->actingAsSuperAdmin();
 
-        $this->get('/admin/system-settings')->assertOk();
+        $this->get('/system-settings')->assertOk();
 
         Setting::set('app_tagline', 'Custom tagline', 'general');
         $this->assertSame('Custom tagline', Setting::get('app_tagline'));

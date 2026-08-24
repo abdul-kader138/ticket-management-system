@@ -34,7 +34,7 @@ class EditProfileTest extends TestCase
     {
         $user = $this->makeStaff();
 
-        $this->actingAs($user)->get('/admin/profile')->assertOk();
+        $this->actingAs($user)->get('/profile')->assertOk();
     }
 
     public function test_user_can_update_name_and_email(): void

@@ -6,6 +6,8 @@ use App\Listeners\LogAuthenticationActivity;
 use App\Listeners\LogPermissionActivity;
 use App\Models\Setting;
 use App\Policies\ActivityPolicy;
+use Filament\Http\Responses\Auth\Contracts\LoginResponse as LoginResponseContract;
+use Filament\Http\Responses\Auth\Contracts\RegistrationResponse as RegistrationResponseContract;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -20,7 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // The panel is the site's only login now — see App\Filament\Auth\LoginResponse.
+        $this->app->bind(LoginResponseContract::class, \App\Filament\Auth\LoginResponse::class);
+        $this->app->bind(RegistrationResponseContract::class, \App\Filament\Auth\RegistrationResponse::class);
     }
 
     /**
