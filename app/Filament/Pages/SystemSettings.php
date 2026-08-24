@@ -98,6 +98,14 @@ class SystemSettings extends Page implements HasForms
             'mail_password' => Setting::get('mail_password', ''),
             'mail_encryption' => Setting::get('mail_encryption', 'tls'),
             'staff_notification_email' => Setting::get('staff_notification_email', ''),
+
+            // Flight API
+            'flight_api_enabled' => Setting::get('flight_api_enabled', false),
+            'flight_api_provider' => Setting::get('flight_api_provider', 'Duffel'),
+            'flight_api_base_url' => Setting::get('flight_api_base_url', 'https://api.duffel.com'),
+            'flight_api_token' => Setting::get('flight_api_token', ''),
+            'flight_api_environment' => Setting::get('flight_api_environment', 'sandbox'),
+            'flight_api_timeout' => Setting::get('flight_api_timeout', 30),
         ]);
     }
 
@@ -303,6 +311,61 @@ class SystemSettings extends Page implements HasForms
                                 ]),
                         ]),
 
+                    // ── Flight API ───────────────────────────────────────────
+                    Tab::make('Flight API')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->schema([
+                            Section::make('Air Ticket Search API')
+                                ->description('Credentials for the flight search/booking provider used by the "Flight Search" screen. Currently wired up for Duffel (duffel.com) — sign up free at app.duffel.com/join and paste your test access token below.')
+                                ->schema([
+                                    Toggle::make('flight_api_enabled')
+                                        ->label('Enable flight search')
+                                        ->helperText('Turning this off hides flight search from users until a provider is configured.')
+                                        ->live(),
+
+                                    Grid::make(2)->schema([
+                                        TextInput::make('flight_api_provider')
+                                            ->label('Provider Name')
+                                            ->default('Duffel')
+                                            ->maxLength(100),
+
+                                        Select::make('flight_api_environment')
+                                            ->label('Environment')
+                                            ->options([
+                                                'sandbox' => 'Test (sandbox airlines)',
+                                                'live' => 'Live / Production',
+                                            ])
+                                            ->helperText('Informational only — Duffel infers test vs. live from the token itself (duffel_test_… vs duffel_live_…).')
+                                            ->native(false)
+                                            ->default('sandbox')
+                                            ->required(),
+                                    ]),
+
+                                    TextInput::make('flight_api_base_url')
+                                        ->label('API Base URL')
+                                        ->url()
+                                        ->default('https://api.duffel.com')
+                                        ->maxLength(255)
+                                        ->columnSpanFull(),
+
+                                    TextInput::make('flight_api_token')
+                                        ->label('API Access Token')
+                                        ->helperText('From Duffel dashboard → Developers → Access Tokens. Starts with duffel_test_ or duffel_live_.')
+                                        ->password()
+                                        ->revealable()
+                                        ->autocomplete('new-password')
+                                        ->maxLength(255)
+                                        ->columnSpanFull(),
+
+                                    TextInput::make('flight_api_timeout')
+                                        ->label('Request Timeout (seconds)')
+                                        ->numeric()
+                                        ->minValue(1)
+                                        ->maxValue(120)
+                                        ->default(30),
+                                ]),
+                        ]),
+
                 ])->persistTabInQueryString('tab'),
             ]);
     }
@@ -330,6 +393,12 @@ class SystemSettings extends Page implements HasForms
             'mail_password' => 'email',
             'mail_encryption' => 'email',
             'staff_notification_email' => 'email',
+            'flight_api_enabled' => 'flight_api',
+            'flight_api_provider' => 'flight_api',
+            'flight_api_base_url' => 'flight_api',
+            'flight_api_token' => 'flight_api',
+            'flight_api_environment' => 'flight_api',
+            'flight_api_timeout' => 'flight_api',
         ];
 
         foreach ($data as $key => $value) {
