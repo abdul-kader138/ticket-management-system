@@ -70,7 +70,7 @@
                         <button
                             type="button"
                             disabled
-                            title="Booking is not built yet"
+                            title="Booking checkout isn't built into this admin test screen — see POST /api/v1/bookings"
                             class="bg-[var(--card-border)] text-[var(--muted)] cursor-not-allowed rounded-md px-5 py-2 text-sm font-semibold"
                         >
                             Select
@@ -82,7 +82,7 @@
 
         <details class="mt-8 bg-[var(--card)] rounded-xl border border-[var(--card-border)] p-4">
             <summary class="text-sm text-[var(--muted)] cursor-pointer">Raw provider response (debug)</summary>
-            <pre class="mt-3 text-xs text-[var(--muted)] overflow-x-auto whitespace-pre-wrap">{{ json_encode($raw, JSON_PRETTY_PRINT) }}</pre>
+            <pre class="mt-3 text-xs text-[var(--muted)] overflow-x-auto whitespace-pre-wrap">{{ json_encode($offers, JSON_PRETTY_PRINT) }}</pre>
         </details>
     </main>
 

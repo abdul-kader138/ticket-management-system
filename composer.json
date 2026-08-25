@@ -11,11 +11,16 @@
         "bezhansalleh/filament-shield": "^3.9",
         "filament/filament": "^3.3",
         "laravel/framework": "^13.8",
+        "laravel/horizon": "^5.48",
+        "laravel/sanctum": "^4.3",
         "laravel/socialite": "^5.30",
         "laravel/tinker": "^3.0",
         "pragmarx/google2fa-qrcode": "^4.0",
+        "predis/predis": "^3.6",
+        "sentry/sentry-laravel": "^4.27",
         "spatie/laravel-activitylog": "^5.0",
-        "spatie/laravel-permission": "^6.25"
+        "spatie/laravel-permission": "^6.25",
+        "stripe/stripe-php": "^21.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

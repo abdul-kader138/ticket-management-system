@@ -1,0 +1,13 @@
+[Unit]
+Description=Ticket Management System scheduler tick (php artisan schedule:run)
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ticket-management-system
+# One tick per invocation — Laravel's scheduler itself decides which due
+# tasks (see routes/console.php, e.g. bookings:expire-holds) actually run
+# this minute. Triggered by the paired .timer unit, not run continuously.
+ExecStart=/usr/bin/php /var/www/ticket-management-system/artisan schedule:run

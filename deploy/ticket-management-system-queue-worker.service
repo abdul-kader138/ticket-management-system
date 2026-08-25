@@ -1,6 +1,6 @@
 [Unit]
-Description=Ticket Management System queue worker (php artisan queue:work)
-After=network.target mysql.service
+Description=Ticket Management System queue supervisor (php artisan horizon)
+After=network.target mysql.service redis-server.service
 
 [Service]
 Type=simple
@@ -11,12 +11,15 @@ Type=simple
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/ticket-management-system
-ExecStart=/usr/bin/php /var/www/ticket-management-system/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
-# --max-time exits the worker cleanly once an hour; Restart=always brings it
-# straight back up on fresh code/config — the standard Laravel pattern for
-# a long-running worker that would otherwise keep running stale opcode-
-# cached PHP indefinitely after a deploy (see deploy.sh's own explicit
-# `systemctl restart` of this unit, for the same reason php-fpm needs one).
+# Horizon supervises its own pool of `queue:work redis` processes (sizing
+# comes from config/horizon.php) and exposes /horizon for live queue
+# depth, throughput and failed-job inspection — payment/booking/webhook
+# jobs (see docs/ROADMAP.md) need that visibility from day one, a bare
+# queue:work loop doesn't give it. `artisan horizon:terminate` (call from
+# deploy.sh after a deploy) exits workers gracefully after their current
+# job; Restart=always brings the master process straight back up.
+ExecStart=/usr/bin/php /var/www/ticket-management-system/artisan horizon
+ExecStop=/usr/bin/php /var/www/ticket-management-system/artisan horizon:terminate
 Restart=always
 RestartSec=5
 

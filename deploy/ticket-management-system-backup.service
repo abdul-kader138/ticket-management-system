@@ -1,0 +1,10 @@
+[Unit]
+Description=Ticket Management System database backup (deploy/backup.sh)
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ticket-management-system
+ExecStart=/var/www/ticket-management-system/deploy/backup.sh

@@ -29,10 +29,22 @@
 
         @unless($flightApiEnabled)
             <div class="mb-4 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-3">
-                Flight search is running in preview mode — an administrator hasn't connected a flight API yet
-                (System Settings &rarr; Flight API).
+                Flight search is running in preview mode — an administrator hasn't connected a flight provider yet
+                (Flight Providers).
             </div>
         @endunless
+
+        @if($flightApiEnabled)
+            @php
+                // -1 is App\Models\SubscriptionPlan::UNLIMITED — see
+                // App\Services\Flights\SearchQuotaService::remaining().
+                $dayLabel = $quotaRemaining['day'] === -1 ? 'Unlimited searches today' : $quotaRemaining['day'].' '.Str::plural('search', $quotaRemaining['day']).' left today';
+                $monthLabel = $quotaRemaining['month'] === -1 ? 'unlimited this month' : $quotaRemaining['month'].' left this month';
+            @endphp
+            <div class="mb-4 rounded-md bg-[var(--card)] border border-[var(--card-border)] text-[var(--muted)] text-sm px-4 py-3">
+                {{ $dayLabel }} &middot; {{ $monthLabel }}.
+            </div>
+        @endif
 
         <div
             x-data="flightSearch()"

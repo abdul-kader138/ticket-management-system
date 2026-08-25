@@ -2,14 +2,21 @@
 
 namespace App\Providers;
 
+use App\Filament\Auth\LoginResponse;
+use App\Filament\Auth\RegistrationResponse;
 use App\Listeners\LogAuthenticationActivity;
 use App\Listeners\LogPermissionActivity;
+use App\Models\Booking;
 use App\Models\Setting;
+use App\Observers\BookingObserver;
 use App\Policies\ActivityPolicy;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse as LoginResponseContract;
 use Filament\Http\Responses\Auth\Contracts\RegistrationResponse as RegistrationResponseContract;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -23,8 +30,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // The panel is the site's only login now — see App\Filament\Auth\LoginResponse.
-        $this->app->bind(LoginResponseContract::class, \App\Filament\Auth\LoginResponse::class);
-        $this->app->bind(RegistrationResponseContract::class, \App\Filament\Auth\RegistrationResponse::class);
+        $this->app->bind(LoginResponseContract::class, LoginResponse::class);
+        $this->app->bind(RegistrationResponseContract::class, RegistrationResponse::class);
     }
 
     /**
@@ -50,6 +57,30 @@ class AppServiceProvider extends ServiceProvider
         // shield:generate'd App\Policies\ActivityPolicy on its own —
         // ActivityLogResource's viewAny/view authorization depends on this.
         Gate::policy(Activity::class, ActivityPolicy::class);
+
+        $this->registerRateLimiters();
+
+        // Every /api/v1/* endpoint returns one resource per response (no
+        // batch/collection endpoints yet), so the default {"data": {...}}
+        // envelope only adds a layer the SPA would immediately unwrap.
+        JsonResource::withoutWrapping();
+
+        Booking::observe(BookingObserver::class);
+    }
+
+    /**
+     * Named limiters for the customer-facing API (see docs/ROADMAP.md,
+     * Phase 0). 'search' is a placeholder ceiling to stop a single client
+     * hammering the endpoint before Phase 3's per-plan quota engine exists;
+     * it is not the quota system itself.
+     */
+    private function registerRateLimiters(): void
+    {
+        RateLimiter::for('api', fn ($request) => Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('login', fn ($request) => Limit::perMinute(5)->by(strtolower((string) $request->input('email')).'|'.$request->ip()));
+
+        RateLimiter::for('search', fn ($request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
     }
 
     /**
@@ -68,15 +99,15 @@ class AppServiceProvider extends ServiceProvider
         }
 
         config([
-            'mail.from.name'    => Setting::get('mail_from_name', config('mail.from.name')),
+            'mail.from.name' => Setting::get('mail_from_name', config('mail.from.name')),
             'mail.from.address' => Setting::get('mail_from_address', config('mail.from.address')),
         ]);
 
         if ($host = Setting::get('mail_host')) {
             config([
-                'mail.default'               => 'smtp',
-                'mail.mailers.smtp.host'     => $host,
-                'mail.mailers.smtp.port'     => Setting::get('mail_port', 587),
+                'mail.default' => 'smtp',
+                'mail.mailers.smtp.host' => $host,
+                'mail.mailers.smtp.port' => Setting::get('mail_port', 587),
                 'mail.mailers.smtp.username' => Setting::get('mail_username'),
                 'mail.mailers.smtp.password' => Setting::get('mail_password'),
                 // The stored value is the admin-facing choice ("tls"/"ssl" —
@@ -87,7 +118,7 @@ class AppServiceProvider extends ServiceProvider
                 // 465 — what "SSL" means). Passing "tls"/"ssl" straight
                 // through throws UnsupportedSchemeException and silently
                 // fails every queued mail job.
-                'mail.mailers.smtp.scheme'   => Setting::get('mail_encryption') === 'ssl' ? 'smtps' : 'smtp',
+                'mail.mailers.smtp.scheme' => Setting::get('mail_encryption') === 'ssl' ? 'smtps' : 'smtp',
             ]);
         }
     }

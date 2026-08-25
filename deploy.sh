@@ -87,6 +87,26 @@ if [[ -f deploy/ticket-management-system-queue-worker.service ]] && command -v s
     systemctl restart ticket-management-system-queue-worker
 fi
 
+# Drives routes/console.php's scheduled tasks (bookings:expire-holds, and
+# whatever gets added after it) — without this timer, Schedule::command()
+# entries are registered but nothing ever calls schedule:run to fire them.
+if [[ -f deploy/ticket-management-system-scheduler.service && -f deploy/ticket-management-system-scheduler.timer ]] && command -v systemctl >/dev/null 2>&1; then
+    install -m 644 deploy/ticket-management-system-scheduler.service /etc/systemd/system/ticket-management-system-scheduler.service
+    install -m 644 deploy/ticket-management-system-scheduler.timer /etc/systemd/system/ticket-management-system-scheduler.timer
+    systemctl daemon-reload
+    systemctl enable --now ticket-management-system-scheduler.timer
+fi
+
+# Nightly database backup — see deploy/backup.sh and docs/ROADMAP.md, Phase
+# 10. Requires mysqldump on PATH; silently does nothing useful without it,
+# same as the other optional units above.
+if [[ -f deploy/ticket-management-system-backup.service && -f deploy/ticket-management-system-backup.timer ]] && command -v systemctl >/dev/null 2>&1; then
+    install -m 644 deploy/ticket-management-system-backup.service /etc/systemd/system/ticket-management-system-backup.service
+    install -m 644 deploy/ticket-management-system-backup.timer /etc/systemd/system/ticket-management-system-backup.timer
+    systemctl daemon-reload
+    systemctl enable --now ticket-management-system-backup.timer
+fi
+
 if id "$WEB_USER" >/dev/null 2>&1; then
     chown -R "$WEB_USER:$WEB_GROUP" storage bootstrap/cache
     chmod -R ug+rwX storage bootstrap/cache

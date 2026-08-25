@@ -14,6 +14,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -99,13 +100,24 @@ class SystemSettings extends Page implements HasForms
             'mail_encryption' => Setting::get('mail_encryption', 'tls'),
             'staff_notification_email' => Setting::get('staff_notification_email', ''),
 
-            // Flight API
-            'flight_api_enabled' => Setting::get('flight_api_enabled', false),
-            'flight_api_provider' => Setting::get('flight_api_provider', 'Duffel'),
-            'flight_api_base_url' => Setting::get('flight_api_base_url', 'https://api.duffel.com'),
-            'flight_api_token' => Setting::get('flight_api_token', ''),
-            'flight_api_environment' => Setting::get('flight_api_environment', 'sandbox'),
-            'flight_api_timeout' => Setting::get('flight_api_timeout', 30),
+            // Search Quotas
+            'default_daily_search_limit' => Setting::get('default_daily_search_limit', 10),
+            'default_monthly_search_limit' => Setting::get('default_monthly_search_limit', 300),
+            'referral_reward_bonus_searches' => Setting::get('referral_reward_bonus_searches', 20),
+
+            // Payments
+            'stripe_secret_key' => Setting::get('stripe_secret_key', ''),
+            'stripe_publishable_key' => Setting::get('stripe_publishable_key', ''),
+            'stripe_webhook_secret' => Setting::get('stripe_webhook_secret', ''),
+            'paypal_mode' => Setting::get('paypal_mode', 'sandbox'),
+            'paypal_client_id' => Setting::get('paypal_client_id', ''),
+            'paypal_client_secret' => Setting::get('paypal_client_secret', ''),
+            'paypal_webhook_id' => Setting::get('paypal_webhook_id', ''),
+
+            // Compliance
+            'current_terms_version' => Setting::get('current_terms_version', 'v1'),
+            'refund_policy_text' => Setting::get('refund_policy_text', ''),
+            'data_retention_days' => Setting::get('data_retention_days', 180),
         ]);
     }
 
@@ -311,58 +323,140 @@ class SystemSettings extends Page implements HasForms
                                 ]),
                         ]),
 
-                    // ── Flight API ───────────────────────────────────────────
-                    Tab::make('Flight API')
-                        ->icon('heroicon-o-paper-airplane')
+                    // ── Search Quotas ────────────────────────────────────────
+                    Tab::make('Search Quotas')
+                        ->icon('heroicon-o-magnifying-glass')
                         ->schema([
-                            Section::make('Air Ticket Search API')
-                                ->description('Credentials for the flight search/booking provider used by the "Flight Search" screen. Currently wired up for Duffel (duffel.com) — sign up free at app.duffel.com/join and paste your test access token below.')
+                            Section::make('Default Flight Search Limits')
+                                ->description('Applies to every account with no paid subscription plan (see Subscription Plans, once configured). Flight search hits a paid provider API per request, so this protects against runaway cost.')
                                 ->schema([
-                                    Toggle::make('flight_api_enabled')
-                                        ->label('Enable flight search')
-                                        ->helperText('Turning this off hides flight search from users until a provider is configured.')
-                                        ->live(),
-
                                     Grid::make(2)->schema([
-                                        TextInput::make('flight_api_provider')
-                                            ->label('Provider Name')
-                                            ->default('Duffel')
-                                            ->maxLength(100),
+                                        TextInput::make('default_daily_search_limit')
+                                            ->label('Searches per day')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->default(10)
+                                            ->required(),
 
-                                        Select::make('flight_api_environment')
-                                            ->label('Environment')
-                                            ->options([
-                                                'sandbox' => 'Test (sandbox airlines)',
-                                                'live' => 'Live / Production',
-                                            ])
-                                            ->helperText('Informational only — Duffel infers test vs. live from the token itself (duffel_test_… vs duffel_live_…).')
-                                            ->native(false)
-                                            ->default('sandbox')
+                                        TextInput::make('default_monthly_search_limit')
+                                            ->label('Searches per month')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->default(300)
                                             ->required(),
                                     ]),
+                                ]),
 
-                                    TextInput::make('flight_api_base_url')
-                                        ->label('API Base URL')
-                                        ->url()
-                                        ->default('https://api.duffel.com')
-                                        ->maxLength(255)
-                                        ->columnSpanFull(),
+                            Section::make('Referral Program')
+                                ->description('Granted automatically to the referrer once the person they referred confirms their first booking — see Promotions for admin-issued codes.')
+                                ->schema([
+                                    TextInput::make('referral_reward_bonus_searches')
+                                        ->label('Bonus searches per successful referral')
+                                        ->numeric()
+                                        ->minValue(0)
+                                        ->default(20)
+                                        ->required(),
+                                ]),
+                        ]),
 
-                                    TextInput::make('flight_api_token')
-                                        ->label('API Access Token')
-                                        ->helperText('From Duffel dashboard → Developers → Access Tokens. Starts with duffel_test_ or duffel_live_.')
+                    // ── Payments ─────────────────────────────────────────────
+                    Tab::make('Payments')
+                        ->icon('heroicon-o-credit-card')
+                        ->schema([
+                            Section::make('Stripe')
+                                ->description('Card payments via PaymentIntents + Elements — card details never touch this server. Get keys from the Stripe Dashboard → Developers → API keys, and create a webhook endpoint pointing at the URL below.')
+                                ->schema([
+                                    Grid::make(2)->schema([
+                                        TextInput::make('stripe_publishable_key')
+                                            ->label('Publishable Key')
+                                            ->maxLength(255),
+
+                                        TextInput::make('stripe_secret_key')
+                                            ->label('Secret Key')
+                                            ->password()
+                                            ->revealable()
+                                            ->autocomplete('new-password')
+                                            ->maxLength(255),
+                                    ]),
+
+                                    TextInput::make('stripe_webhook_secret')
+                                        ->label('Webhook Signing Secret')
                                         ->password()
                                         ->revealable()
                                         ->autocomplete('new-password')
                                         ->maxLength(255)
                                         ->columnSpanFull(),
 
-                                    TextInput::make('flight_api_timeout')
-                                        ->label('Request Timeout (seconds)')
+                                    Placeholder::make('stripe_webhook_url')
+                                        ->label('Webhook URL')
+                                        ->content(fn () => route('webhooks.payments', ['gateway' => 'stripe']))
+                                        ->helperText('Add this as an endpoint in the Stripe Dashboard, listening for payment_intent.succeeded, payment_intent.payment_failed and charge.refunded.'),
+                                ]),
+
+                            Section::make('PayPal')
+                                ->description('Orders v2 (create → customer approves on PayPal → capture). Get credentials from developer.paypal.com → Apps & Credentials, and register a webhook pointing at the URL below.')
+                                ->schema([
+                                    Select::make('paypal_mode')
+                                        ->label('Environment')
+                                        ->options(['sandbox' => 'Sandbox', 'live' => 'Live'])
+                                        ->default('sandbox')
+                                        ->native(false)
+                                        ->required(),
+
+                                    Grid::make(2)->schema([
+                                        TextInput::make('paypal_client_id')
+                                            ->label('Client ID')
+                                            ->maxLength(255),
+
+                                        TextInput::make('paypal_client_secret')
+                                            ->label('Client Secret')
+                                            ->password()
+                                            ->revealable()
+                                            ->autocomplete('new-password')
+                                            ->maxLength(255),
+                                    ]),
+
+                                    TextInput::make('paypal_webhook_id')
+                                        ->label('Webhook ID')
+                                        ->helperText('From the webhook you register in the PayPal dashboard — required to verify incoming webhook signatures.')
+                                        ->maxLength(255)
+                                        ->columnSpanFull(),
+
+                                    Placeholder::make('paypal_webhook_url')
+                                        ->label('Webhook URL')
+                                        ->content(fn () => route('webhooks.payments', ['gateway' => 'paypal']))
+                                        ->helperText('Subscribe it to PAYMENT.CAPTURE.COMPLETED, PAYMENT.CAPTURE.DENIED and PAYMENT.CAPTURE.REFUNDED.'),
+                                ]),
+                        ]),
+
+                    // ── Compliance ───────────────────────────────────────────
+                    Tab::make('Compliance')
+                        ->icon('heroicon-o-scale')
+                        ->schema([
+                            Section::make('Terms & Refund Policy')
+                                ->description('The version is snapshotted onto every new booking at purchase time (Booking::terms_version) — bumping it here does not change which policy applied to an existing booking.')
+                                ->schema([
+                                    TextInput::make('current_terms_version')
+                                        ->label('Current Version')
+                                        ->default('v1')
+                                        ->required()
+                                        ->helperText('A short label, e.g. "v1" or "2026-08-25".'),
+
+                                    Textarea::make('refund_policy_text')
+                                        ->label('Refund Policy Summary')
+                                        ->rows(4)
+                                        ->helperText('Shown to customers at checkout for the version above.'),
+                                ]),
+
+                            Section::make('Data Retention')
+                                ->description('How long to keep high-volume operational records with no ongoing value — see App\Console\Commands\PruneRetentionData, run weekly. Bookings, payments and refunds are never pruned by this.')
+                                ->schema([
+                                    TextInput::make('data_retention_days')
+                                        ->label('Retention window (days)')
                                         ->numeric()
                                         ->minValue(1)
-                                        ->maxValue(120)
-                                        ->default(30),
+                                        ->default(180)
+                                        ->required(),
                                 ]),
                         ]),
 
@@ -393,12 +487,19 @@ class SystemSettings extends Page implements HasForms
             'mail_password' => 'email',
             'mail_encryption' => 'email',
             'staff_notification_email' => 'email',
-            'flight_api_enabled' => 'flight_api',
-            'flight_api_provider' => 'flight_api',
-            'flight_api_base_url' => 'flight_api',
-            'flight_api_token' => 'flight_api',
-            'flight_api_environment' => 'flight_api',
-            'flight_api_timeout' => 'flight_api',
+            'default_daily_search_limit' => 'search_quota',
+            'default_monthly_search_limit' => 'search_quota',
+            'referral_reward_bonus_searches' => 'search_quota',
+            'stripe_secret_key' => 'payments',
+            'stripe_publishable_key' => 'payments',
+            'stripe_webhook_secret' => 'payments',
+            'paypal_mode' => 'payments',
+            'paypal_client_id' => 'payments',
+            'paypal_client_secret' => 'payments',
+            'paypal_webhook_id' => 'payments',
+            'current_terms_version' => 'compliance',
+            'refund_policy_text' => 'compliance',
+            'data_retention_days' => 'compliance',
         ];
 
         foreach ($data as $key => $value) {

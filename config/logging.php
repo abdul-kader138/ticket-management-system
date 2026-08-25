@@ -73,6 +73,20 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Payment/booking/webhook events that need to survive independently
+        // of general app noise and stay easy to grep/alert on — see
+        // docs/ROADMAP.md, Phase 9 and Log::channel('audit') call sites in
+        // App\Services\Payments\PaymentService. Kept 90 days, well past the
+        // 14-day default, since these are the events most likely to matter
+        // for a "why didn't this booking confirm" investigation weeks later.
+        'audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/audit.log'),
+            'level' => 'debug',
+            'days' => env('LOG_AUDIT_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

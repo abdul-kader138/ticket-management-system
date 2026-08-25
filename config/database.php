@@ -44,11 +44,9 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
-        'mysql' => [
+        'mysql' => array_merge([
             'driver' => 'mysql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
@@ -62,7 +60,28 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
-        ],
+        ], env('DB_READ_HOST') ? [
+            // See docs/ROADMAP.md, Phase 9 — a read replica for
+            // reporting/admin list views once one exists; unset
+            // DB_READ_HOST (the default) and this collapses back to a
+            // single plain 'host', so it's a no-op until there's an actual
+            // replica to point at. 'sticky' keeps a request that just wrote
+            // reading its own write back from the primary immediately
+            // after, rather than hitting a replica that hasn't replicated
+            // it yet.
+            'sticky' => true,
+            'read' => [
+                'host' => explode(',', env('DB_READ_HOST')),
+                'port' => env('DB_READ_PORT', env('DB_PORT', '3306')),
+            ],
+            'write' => [
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '3306'),
+            ],
+        ] : [
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+        ]),
 
         'mariadb' => [
             'driver' => 'mariadb',
@@ -173,6 +192,22 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_CACHE_DB', '1'),
+            'max_retries' => env('REDIS_MAX_RETRIES', 3),
+            'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
+            'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
+            'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
+        ],
+
+        // Kept on its own logical database so session churn (one key per
+        // active login) never shares eviction/memory pressure with the
+        // queue (default, db 0) or the cache store (db 1).
+        'session' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_SESSION_DB', '2'),
             'max_retries' => env('REDIS_MAX_RETRIES', 3),
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
             'backoff_base' => env('REDIS_BACKOFF_BASE', 100),

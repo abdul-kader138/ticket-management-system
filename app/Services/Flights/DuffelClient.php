@@ -2,13 +2,19 @@
 
 namespace App\Services\Flights;
 
-use App\Models\Setting;
+use App\Models\FlightProvider;
+use App\Services\Flights\Contracts\FlightProviderContract;
+use App\Services\Flights\DTO\CancellationResult;
+use App\Services\Flights\DTO\Offer;
+use App\Services\Flights\DTO\OfferCollection;
+use App\Services\Flights\DTO\ProviderOrder;
+use App\Services\Flights\DTO\SearchCriteria;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-class DuffelClient
+class DuffelClient implements FlightProviderContract
 {
     protected string $baseUrl;
 
@@ -16,16 +22,16 @@ class DuffelClient
 
     protected int $timeout;
 
-    public function __construct()
+    public function __construct(protected readonly FlightProvider $provider)
     {
-        $this->baseUrl = rtrim((string) Setting::get('flight_api_base_url', 'https://api.duffel.com'), '/') ?: 'https://api.duffel.com';
-        $this->token = Setting::get('flight_api_token') ?: null;
-        $this->timeout = (int) Setting::get('flight_api_timeout', 30);
+        $this->baseUrl = rtrim((string) ($provider->base_url ?: 'https://api.duffel.com'), '/');
+        $this->token = $provider->credential('token');
+        $this->timeout = $provider->timeout ?: 30;
     }
 
     public function configured(): bool
     {
-        return (bool) Setting::get('flight_api_enabled', false) && filled($this->token);
+        return $this->provider->is_enabled && filled($this->token);
     }
 
     protected function client(): PendingRequest
@@ -39,25 +45,17 @@ class DuffelClient
             ->timeout($this->timeout);
     }
 
-    /**
-     * Search for flight offers.
-     *
-     * @param  array<int, array{origin: string, destination: string, departure_date: string}>  $slices
-     * @return array{offers: array, raw: array}
-     *
-     * @throws DuffelApiException
-     */
-    public function searchOffers(array $slices, int $adults, string $cabinClass): array
+    public function search(SearchCriteria $criteria): OfferCollection
     {
         $payload = [
             'data' => [
-                'slices' => $slices,
+                'slices' => $criteria->slices,
                 // Duffel requires an "age" for non-adult passenger types; since
                 // the search form doesn't collect ages, only adults are sent
                 // for now — children/infants are accepted by the UI but not
                 // yet forwarded to the provider.
-                'passengers' => array_fill(0, max(1, $adults), ['type' => 'adult']),
-                'cabin_class' => $cabinClass,
+                'passengers' => array_fill(0, max(1, $criteria->adults), ['type' => 'adult']),
+                'cabin_class' => $criteria->cabinClass,
             ],
         ];
 
@@ -69,17 +67,151 @@ class DuffelClient
             throw DuffelApiException::fromResponse($e->response);
         }
 
-        $json = $response->json();
+        $offers = array_map(
+            fn (array $offer) => new Offer((string) $offer['id'], $this->provider->code, $offer),
+            $response->json('data.offers', []) ?? []
+        );
+
+        return new OfferCollection($offers);
+    }
+
+    public function getOffer(string $offerId): Offer
+    {
+        try {
+            $response = $this->client()->get("/air/offers/{$offerId}")->throw();
+        } catch (RequestException $e) {
+            throw DuffelApiException::fromResponse($e->response);
+        }
+
+        $offer = $response->json('data', []);
+
+        return new Offer((string) $offer['id'], $this->provider->code, $offer);
+    }
+
+    public function createOrder(string $offerId, array $passengers): ProviderOrder
+    {
+        $offer = $this->getOffer($offerId)->raw;
+
+        $payload = [
+            'data' => [
+                'type' => 'instant',
+                'selected_offers' => [$offerId],
+                'payments' => [[
+                    'type' => 'balance',
+                    'currency' => $offer['total_currency'] ?? null,
+                    'amount' => $offer['total_amount'] ?? null,
+                ]],
+                'passengers' => $passengers,
+            ],
+        ];
+
+        try {
+            $response = $this->client()->post('/air/orders', $payload)->throw();
+        } catch (RequestException $e) {
+            throw DuffelApiException::fromResponse($e->response);
+        }
+
+        $order = $response->json('data', []);
+
+        return new ProviderOrder(
+            (string) $order['id'],
+            $order['booking_reference'] ?? null,
+            'confirmed',
+            $order,
+        );
+    }
+
+    public function cancelOrder(string $providerOrderId): CancellationResult
+    {
+        try {
+            $created = $this->client()
+                ->post('/air/order_cancellations', ['data' => ['order_id' => $providerOrderId]])
+                ->throw();
+
+            $cancellationId = $created->json('data.id');
+
+            $confirmed = $this->client()
+                ->post("/air/order_cancellations/{$cancellationId}/actions/confirm")
+                ->throw();
+        } catch (RequestException $e) {
+            throw DuffelApiException::fromResponse($e->response);
+        }
+
+        $data = $confirmed->json('data', []);
+
+        return new CancellationResult(
+            confirmed: true,
+            refundAmount: $data['refund_amount'] ?? null,
+            refundCurrency: $data['refund_currency'] ?? null,
+            raw: $data,
+        );
+    }
+
+    public function changeOrder(string $providerOrderId, SearchCriteria $newCriteria): OfferCollection
+    {
+        $payload = [
+            'data' => [
+                'order_id' => $providerOrderId,
+                'slices' => [
+                    'add' => $newCriteria->slices,
+                ],
+            ],
+        ];
+
+        try {
+            $response = $this->client()->post('/air/order_change_requests', $payload)->throw();
+        } catch (RequestException $e) {
+            throw DuffelApiException::fromResponse($e->response);
+        }
+
+        $changeRequestId = $response->json('data.id');
+
+        try {
+            $offers = $this->client()
+                ->get('/air/order_change_offers', ['order_change_request_id' => $changeRequestId])
+                ->throw();
+        } catch (RequestException $e) {
+            throw DuffelApiException::fromResponse($e->response);
+        }
+
+        $collection = array_map(
+            fn (array $offer) => new Offer((string) $offer['id'], $this->provider->code, $offer),
+            $offers->json('data', []) ?? []
+        );
+
+        return new OfferCollection($collection);
+    }
+
+    /**
+     * KNOWN GAP: Duffel's real order-change confirmation flow is not
+     * verified against their live API from this codebase — the endpoint
+     * and payload below are a best-effort guess (mirroring the shape of
+     * order_change_requests above), not something that's actually been
+     * exercised against Duffel's sandbox. Confirm against their current
+     * docs before relying on this for a real change.
+     *
+     * @return array{new_total_amount: ?string, currency: ?string, raw: array<string, mixed>}
+     */
+    public function confirmChangeOffer(string $changeOfferId): array
+    {
+        try {
+            $response = $this->client()
+                ->post('/air/order_changes', ['data' => ['order_change_offer_id' => $changeOfferId]])
+                ->throw();
+        } catch (RequestException $e) {
+            throw DuffelApiException::fromResponse($e->response);
+        }
+
+        $data = $response->json('data', []);
 
         return [
-            'offers' => $json['data']['offers'] ?? [],
-            'raw' => $json,
+            'new_total_amount' => $data['new_total_amount'] ?? $data['total_amount'] ?? null,
+            'currency' => $data['new_total_currency'] ?? $data['total_currency'] ?? null,
+            'raw' => $data,
         ];
     }
 
     /**
-     * Airport/city autocomplete suggestions.
-     *
      * @return array<int, array{iata_code: ?string, name: ?string, city_name: ?string}>
      */
     public function suggestPlaces(string $query): array
@@ -111,7 +243,7 @@ class DuffelClient
             return [];
         }
 
-        return Cache::remember('duffel:airlines', now()->addDay(), function () {
+        return Cache::remember("duffel:airlines:{$this->provider->id}", now()->addDay(), function () {
             $airlines = [];
             $after = null;
             $page = 0;

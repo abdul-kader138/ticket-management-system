@@ -56,6 +56,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Customer Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | Where the customer-facing SPA (see docs/ROADMAP.md, Phase 1) is
+    | served from. Used only to build links that leave the API — password
+    | reset emails and OAuth post-login redirects — since the API itself
+    | never renders a page. Defaults to APP_URL until the SPA has its own
+    | domain/build.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

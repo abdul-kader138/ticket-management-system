@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Setting;
+use App\Services\Flights\DTO\SearchCriteria;
 use App\Services\Flights\DuffelApiException;
-use App\Services\Flights\DuffelClient;
+use App\Services\Flights\FlightProviderManager;
+use App\Services\Flights\SearchQuotaExceededException;
+use App\Services\Flights\SearchQuotaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,28 +14,25 @@ use Illuminate\View\View;
 
 class FlightSearchController extends Controller
 {
-    public function index(DuffelClient $duffel): View
+    public function index(Request $request, FlightProviderManager $providers, SearchQuotaService $quota): View
     {
         return view('flights.search', [
-            'flightApiEnabled' => (bool) Setting::get('flight_api_enabled', false),
-            'airlines' => $duffel->listAirlines(),
+            'flightApiEnabled' => $providers->hasConfiguredProvider(),
+            'airlines' => $providers->listAirlines(),
+            'quotaRemaining' => $quota->remaining($request->user()),
         ]);
     }
 
-    public function airports(Request $request, DuffelClient $duffel): JsonResponse
+    public function airports(Request $request, FlightProviderManager $providers): JsonResponse
     {
-        if (! $duffel->configured()) {
-            return response()->json(['data' => []]);
-        }
-
         $query = (string) $request->query('query', '');
 
         return response()->json([
-            'data' => $duffel->suggestPlaces($query),
+            'data' => $providers->suggestPlaces($query),
         ]);
     }
 
-    public function search(Request $request, DuffelClient $duffel): View|RedirectResponse
+    public function search(Request $request, FlightProviderManager $providers): View|RedirectResponse
     {
         $data = $request->validate([
             'trip_type' => ['required', 'in:oneway,roundtrip,multicity'],
@@ -49,17 +48,17 @@ class FlightSearchController extends Controller
             'fare_type' => ['nullable', 'string', 'max:50'],
         ]);
 
-        if (! $duffel->configured()) {
+        if (! $providers->hasConfiguredProvider()) {
             return back()
                 ->withInput()
-                ->with('error', 'Flight search is not available yet. An administrator needs to configure the flight API in System Settings.');
+                ->with('error', 'Flight search is not available yet. An administrator needs to configure a flight provider in Flight Providers.');
         }
 
         $slices = [];
 
         foreach ($data['legs'] as $index => $leg) {
-            $origin = $this->extractIataCode($leg['from']);
-            $destination = $this->extractIataCode($leg['to']);
+            $origin = SearchCriteria::extractIataCode($leg['from']);
+            $destination = SearchCriteria::extractIataCode($leg['to']);
 
             if (! $origin || ! $destination) {
                 return back()
@@ -76,8 +75,18 @@ class FlightSearchController extends Controller
             ];
         }
 
+        $criteria = new SearchCriteria(
+            slices: $slices,
+            adults: (int) $data['adults'],
+            children: (int) ($data['children'] ?? 0),
+            infants: (int) ($data['infants'] ?? 0),
+            cabinClass: $data['cabin_class'],
+        );
+
         try {
-            $result = $duffel->searchOffers($slices, (int) $data['adults'], $data['cabin_class']);
+            $offers = $providers->search($criteria, $request->user())->toArray();
+        } catch (SearchQuotaExceededException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
         } catch (DuffelApiException $e) {
             return back()
                 ->withInput()
@@ -85,29 +94,8 @@ class FlightSearchController extends Controller
         }
 
         return view('flights.results', [
-            'offers' => $result['offers'],
-            'raw' => $result['raw'],
+            'offers' => $offers,
             'search' => $data,
         ]);
-    }
-
-    /**
-     * Pull a 3-letter IATA code out of an airport field. Accepts either a
-     * bare code ("LHR") or the "City Name (LHR)" format the autocomplete
-     * dropdown fills in.
-     */
-    private function extractIataCode(string $value): ?string
-    {
-        $value = trim($value);
-
-        if (preg_match('/\(([A-Za-z]{3})\)\s*$/', $value, $matches)) {
-            return strtoupper($matches[1]);
-        }
-
-        if (preg_match('/^[A-Za-z]{3}$/', $value)) {
-            return strtoupper($value);
-        }
-
-        return null;
     }
 }
