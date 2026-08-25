@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Account\TwoFactorController;
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Api\V1\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Api\V1\Auth\NewPasswordController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
+use App\Http\Controllers\Api\V1\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Api\V1\BookingChangeController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\Payments\PaymentController;
@@ -54,6 +56,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->name('password.email');
         Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 
+        // Second step of the challenge started by POST /auth/login when
+        // the account has 2FA enabled — see
+        // AuthenticatedSessionController::store() and
+        // TwoFactorChallengeController.
+        Route::post('/login/challenge', [TwoFactorChallengeController::class, 'store'])
+            ->middleware('throttle:2fa-challenge')
+            ->name('login.challenge');
+
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
             Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
@@ -72,6 +82,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');
         Route::get('/account/export', [AccountController::class, 'export'])->name('account.export');
         Route::delete('/account', [AccountController::class, 'destroy'])->name('account.destroy');
+
+        Route::post('/account/two-factor/setup', [TwoFactorController::class, 'setup'])->name('account.two-factor.setup');
+        Route::post('/account/two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('account.two-factor.confirm');
+        Route::delete('/account/two-factor', [TwoFactorController::class, 'destroy'])->name('account.two-factor.destroy');
 
         Route::apiResource('traveler-profiles', TravelerProfileController::class)
             ->parameters(['traveler-profiles' => 'travelerProfile'])

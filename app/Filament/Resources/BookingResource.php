@@ -42,6 +42,13 @@ class BookingResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            // Without this, the manualRefund action's visible() closure
+            // below runs a fresh `payments()->where(...)->exists()` query
+            // per row — a real N+1 confirmed via query-log on this exact
+            // page (27 queries for 10 rows before this fix). Eager-loading
+            // once here lets that closure check the already-loaded
+            // collection in memory instead.
+            ->modifyQueryUsing(fn ($query) => $query->with(['user', 'flightProvider', 'payments']))
             ->columns([
                 TextColumn::make('id')
                     ->label('Booking #')
@@ -117,7 +124,7 @@ class BookingResource extends Resource
                     ->color('warning')
                     ->requiresConfirmation()
                     ->visible(fn (Booking $record) => auth()->user()->can('update_booking')
-                        && $record->payments()->where('status', Payment::STATUS_SUCCEEDED)->exists())
+                        && $record->payments->contains(fn (Payment $payment) => $payment->status === Payment::STATUS_SUCCEEDED))
                     ->form([
                         TextInput::make('amount')
                             ->label('Amount to refund')
@@ -130,7 +137,10 @@ class BookingResource extends Resource
                             ->required(),
                     ])
                     ->action(function (Booking $record, array $data) {
-                        $payment = $record->payments()->where('status', Payment::STATUS_SUCCEEDED)->latest()->first();
+                        $payment = $record->payments
+                            ->where('status', Payment::STATUS_SUCCEEDED)
+                            ->sortByDesc('created_at')
+                            ->first();
 
                         try {
                             app(PaymentService::class)->refund($payment, (int) round($data['amount'] * 100), $data['reason']);

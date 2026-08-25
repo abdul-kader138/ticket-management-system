@@ -47,6 +47,7 @@ class FakeFlightProvider implements FlightProviderContract
         self::$cancelResult = ['confirmed' => true, 'refund_amount' => null, 'refund_currency' => null];
         self::$changeOffersToReturn = [];
         self::$confirmChangeOfferResult = ['new_total_amount' => null, 'currency' => null, 'raw' => []];
+        self::$lastCreateOrderPassengers = null;
     }
 
     public function configured(): bool
@@ -75,8 +76,13 @@ class FakeFlightProvider implements FlightProviderContract
         return new Offer($offerId, $this->provider->code, static::$offerDetail ?? ['id' => $offerId]);
     }
 
+    /** @var array<int, array<string, mixed>>|null */
+    public static ?array $lastCreateOrderPassengers = null;
+
     public function createOrder(string $offerId, array $passengers): ProviderOrder
     {
+        static::$lastCreateOrderPassengers = $passengers;
+
         return new ProviderOrder($offerId, null, 'confirmed', []);
     }
 

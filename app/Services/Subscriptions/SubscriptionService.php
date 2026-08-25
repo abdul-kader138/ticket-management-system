@@ -18,6 +18,26 @@ class SubscriptionService
 {
     private const PLAN_COLUMNS = ['day' => 'daily_search_limit', 'month' => 'monthly_search_limit'];
 
+    /**
+     * Per-instance memoization, keyed by user id — activePlan() and
+     * matchedTierRule() are each hit twice (once directly, once via
+     * hasBenefit()/searchLimit()) and searchLimit() itself is called up to
+     * six times in a single search request (see SearchQuotaService's
+     * ensureNotExceeded/consume/remaining, each looping both quota
+     * periods). Without this, that's a dozen-plus redundant queries per
+     * request for data that cannot change mid-request. Not cached beyond
+     * the instance/request lifetime — Laravel doesn't share this class as
+     * a singleton across requests, so there's no staleness risk to manage.
+     *
+     * @var array<int, SubscriptionPlan|false>
+     */
+    private array $activePlanCache = [];
+
+    /**
+     * @var array<int, SubscriptionTierRule|false>
+     */
+    private array $tierRuleCache = [];
+
     public function createPendingSubscription(User $user, SubscriptionPlan $plan): UserSubscription
     {
         return UserSubscription::create([
@@ -43,16 +63,31 @@ class SubscriptionService
             'starts_at' => now(),
             'ends_at' => $plan->billing_interval === 'year' ? now()->addYear() : now()->addMonth(),
         ]);
+
+        $this->forgetActivePlanCache($subscription->user_id);
     }
 
     public function markFailed(UserSubscription $subscription): void
     {
         $subscription->update(['status' => UserSubscription::STATUS_FAILED]);
+        $this->forgetActivePlanCache($subscription->user_id);
     }
 
     public function cancel(UserSubscription $subscription): void
     {
         $subscription->update(['status' => UserSubscription::STATUS_CANCELLED, 'ends_at' => now()]);
+        $this->forgetActivePlanCache($subscription->user_id);
+    }
+
+    /**
+     * Without this, activate()/markFailed()/cancel() followed by a
+     * same-instance activePlan() check (e.g. a test, or any future caller
+     * that mutates and immediately re-reads) would see the pre-mutation
+     * cached answer — memoization is only sound if a write clears it.
+     */
+    private function forgetActivePlanCache(int $userId): void
+    {
+        unset($this->activePlanCache[$userId]);
     }
 
     /**
@@ -73,26 +108,34 @@ class SubscriptionService
 
     public function activePlan(User $user): ?SubscriptionPlan
     {
-        return UserSubscription::query()
-            ->where('user_id', $user->id)
-            ->where('status', UserSubscription::STATUS_ACTIVE)
-            ->where('starts_at', '<=', now())
-            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
-            ->latest('starts_at')
-            ->first()
-            ?->subscriptionPlan;
+        if (! array_key_exists($user->id, $this->activePlanCache)) {
+            $this->activePlanCache[$user->id] = UserSubscription::query()
+                ->where('user_id', $user->id)
+                ->where('status', UserSubscription::STATUS_ACTIVE)
+                ->where('starts_at', '<=', now())
+                ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
+                ->latest('starts_at')
+                ->first()
+                ?->subscriptionPlan ?? false;
+        }
+
+        return $this->activePlanCache[$user->id] ?: null;
     }
 
     public function matchedTierRule(User $user): ?SubscriptionTierRule
     {
-        $accountAgeDays = $user->created_at->diffInDays(now());
+        if (! array_key_exists($user->id, $this->tierRuleCache)) {
+            $accountAgeDays = $user->created_at->diffInDays(now());
 
-        return SubscriptionTierRule::query()
-            ->active()
-            ->where('min_total_spend_cents', '<=', $user->total_spend_cents)
-            ->where('min_account_age_days', '<=', $accountAgeDays)
-            ->orderByDesc('priority')
-            ->first();
+            $this->tierRuleCache[$user->id] = SubscriptionTierRule::query()
+                ->active()
+                ->where('min_total_spend_cents', '<=', $user->total_spend_cents)
+                ->where('min_account_age_days', '<=', $accountAgeDays)
+                ->orderByDesc('priority')
+                ->first() ?? false;
+        }
+
+        return $this->tierRuleCache[$user->id] ?: null;
     }
 
     /**

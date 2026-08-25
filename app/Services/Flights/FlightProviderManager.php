@@ -19,6 +19,14 @@ use Illuminate\Support\Facades\Log;
  */
 class FlightProviderManager
 {
+    // Enable/disable and credential edits are rare admin actions; a search
+    // request is not — caching the (small) enabled-providers row set saves
+    // a DB round trip on every single search/autocomplete/airline-list call
+    // at 50k-user scale. Flushed immediately on any FlightProvider write
+    // (see FlightProvider::booted()), so this is a performance cache, not a
+    // staleness trade-off.
+    public const CACHE_KEY = 'flight-providers:enabled';
+
     public function __construct(private readonly SearchQuotaService $quota) {}
 
     /**
@@ -26,10 +34,17 @@ class FlightProviderManager
      */
     public function enabledProviders(): array
     {
-        return FlightProvider::query()
+        // Only the (already-encrypted-at-rest) model rows are cached, not
+        // constructed driver instances — a driver decrypts its credentials
+        // in its own constructor, and that decrypted secret has no business
+        // sitting in the cache store even briefly.
+        $providers = Cache::remember(self::CACHE_KEY, now()->addMinutes(10), fn () => FlightProvider::query()
             ->enabled()
             ->orderBy('priority')
             ->get()
+        );
+
+        return $providers
             ->map(fn (FlightProvider $provider) => $this->driver($provider))
             ->filter(fn (FlightProviderContract $driver) => $driver->configured())
             ->values()

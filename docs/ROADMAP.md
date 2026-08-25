@@ -269,7 +269,7 @@ interface FlightProviderContract {
 ```
 
 - **Credentials move to data, not code** — each row in `flight_providers` holds its own encrypted API key/secret and environment, so sandbox and live credentials for the same provider (or multiple accounts of the same provider) coexist.
-- **Fan-out search** — the provider manager calls every `is_enabled` provider concurrently (Laravel's HTTP pool), merges offers by a normalized fare/segment shape, and tags each with `provider_id` so booking routes back to the right API.
+- **Fan-out search** — the provider manager calls every `is_enabled` provider in turn, merges offers by a normalized fare/segment shape, and tags each with `provider_id` so booking routes back to the right API. Sequential for now, since `FlightProviderContract::search()` is a single synchronous call and only one provider (Duffel) is actually implemented — there's nothing to run *concurrently* with yet. Making the fan-out concurrent (Laravel's `Http::pool()`) needs splitting the contract into a request-build step and a response-parse step per driver, which is real surgery across every implementation; worth doing once a second provider makes sequential latency an actual cost, not before.
 - **Graceful degradation** — one provider timing out or erroring must not fail the whole search; log and return partial results.
 - **Booking stays provider-bound** — once a user picks an offer, all subsequent calls (order, change, cancel) go to that same provider by `provider_id` stored on the `booking`.
 

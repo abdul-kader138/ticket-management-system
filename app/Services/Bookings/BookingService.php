@@ -113,12 +113,15 @@ class BookingService
      * one place a provider order gets created and a booking becomes real
      * (see docs/ROADMAP.md, Phase 5).
      *
-     * KNOWN GAP: Duffel order creation also expects title/gender/email/
-     * phone per passenger, none of which traveler_profiles collects today
-     * (see docs/ROADMAP.md, Phase 1's traveler_profiles design — it only
-     * has name/DOB/passport). The placeholders below are a stand-in, not a
-     * production-correct mapping; extending traveler_profiles with those
-     * fields is a prerequisite for this to work against Duffel for real.
+     * Title/gender/email/phone come from the traveler's own profile —
+     * added specifically to close this method's original gap (see
+     * migration 2026_08_25_230000). Falls back to the booking's own account
+     * holder's email/phone for a traveler profile created before that
+     * migration, or for a companion profile the account holder never
+     * bothered to fill those optional fields in for; a missing gender/title
+     * is still passed through as null rather than guessed, since a wrong
+     * guess is worse than an honest gap the provider can reject with a
+     * clear validation error.
      *
      * @throws DuffelApiException
      */
@@ -128,17 +131,22 @@ class BookingService
         $offer = $driver->getOffer($booking->provider_offer_id)->raw;
         $offerPassengers = data_get($offer, 'passengers', []);
 
-        $passengers = $booking->passengers->values()->map(function ($bookingPassenger, $index) use ($offerPassengers, $booking) {
-            return [
-                'id' => $offerPassengers[$index]['id'] ?? null,
-                'type' => $bookingPassenger->type,
-                'given_name' => $bookingPassenger->first_name,
-                'family_name' => $bookingPassenger->last_name,
-                'born_on' => $bookingPassenger->date_of_birth->toDateString(),
-                'email' => $booking->user->email,
-                'phone_number' => $booking->user->phone,
-            ];
-        })->all();
+        $passengers = $booking->passengers()->with('travelerProfile')->get()->values()
+            ->map(function ($bookingPassenger, $index) use ($offerPassengers, $booking) {
+                $profile = $bookingPassenger->travelerProfile;
+
+                return [
+                    'id' => $offerPassengers[$index]['id'] ?? null,
+                    'type' => $bookingPassenger->type,
+                    'title' => $profile?->title,
+                    'gender' => $profile?->gender,
+                    'given_name' => $bookingPassenger->first_name,
+                    'family_name' => $bookingPassenger->last_name,
+                    'born_on' => $bookingPassenger->date_of_birth->toDateString(),
+                    'email' => $profile?->email ?: $booking->user->email,
+                    'phone_number' => $profile?->phone ?: $booking->user->phone,
+                ];
+            })->all();
 
         $order = $driver->createOrder($booking->provider_offer_id, $passengers);
 

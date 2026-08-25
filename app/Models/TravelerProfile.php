@@ -12,8 +12,8 @@ class TravelerProfile extends Model
     use LogsActivity;
 
     protected $fillable = [
-        'user_id', 'first_name', 'last_name', 'date_of_birth',
-        'nationality', 'passport_number', 'passport_expiry',
+        'user_id', 'title', 'gender', 'first_name', 'last_name', 'date_of_birth',
+        'nationality', 'email', 'phone', 'passport_number', 'passport_expiry',
     ];
 
     protected function casts(): array

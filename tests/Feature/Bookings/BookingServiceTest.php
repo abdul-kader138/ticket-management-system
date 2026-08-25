@@ -143,4 +143,42 @@ class BookingServiceTest extends TestCase
         $this->assertSame(0, app(BookingService::class)->expireStaleHolds());
         $this->assertSame(Booking::STATUS_HELD, $booking->fresh()->status);
     }
+
+    public function test_confirm_with_provider_sends_the_travelers_own_title_gender_and_contact_details(): void
+    {
+        $traveler = $this->traveler();
+        $traveler->update(['title' => 'ms', 'gender' => 'f', 'email' => 'ada@travelers.example', 'phone' => '+15559876']);
+
+        $booking = app(BookingService::class)->createHold(
+            $this->user, 'fake', 'off_1', [['traveler_profile_id' => $traveler->id, 'type' => 'adult']]
+        );
+        $booking->transitionTo(Booking::STATUS_PENDING_PAYMENT);
+
+        app(BookingService::class)->confirmWithProvider($booking);
+
+        $sent = FakeFlightProvider::$lastCreateOrderPassengers[0];
+        $this->assertSame('ms', $sent['title']);
+        $this->assertSame('f', $sent['gender']);
+        $this->assertSame('ada@travelers.example', $sent['email']);
+        $this->assertSame('+15559876', $sent['phone_number']);
+    }
+
+    public function test_confirm_with_provider_falls_back_to_the_account_holders_contact_details(): void
+    {
+        $this->user->update(['email' => 'account-holder@example.com', 'phone' => '+15551112222']);
+        $traveler = $this->traveler(); // no email/phone set on the profile itself
+
+        $booking = app(BookingService::class)->createHold(
+            $this->user, 'fake', 'off_1', [['traveler_profile_id' => $traveler->id, 'type' => 'adult']]
+        );
+        $booking->transitionTo(Booking::STATUS_PENDING_PAYMENT);
+
+        app(BookingService::class)->confirmWithProvider($booking);
+
+        $sent = FakeFlightProvider::$lastCreateOrderPassengers[0];
+        $this->assertSame('account-holder@example.com', $sent['email']);
+        $this->assertSame('+15551112222', $sent['phone_number']);
+        $this->assertNull($sent['title']);
+        $this->assertNull($sent['gender']);
+    }
 }

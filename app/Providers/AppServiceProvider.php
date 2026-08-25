@@ -81,6 +81,11 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', fn ($request) => Limit::perMinute(5)->by(strtolower((string) $request->input('email')).'|'.$request->ip()));
 
         RateLimiter::for('search', fn ($request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
+
+        // A 6-digit TOTP code has a small enough space that this endpoint
+        // needs its own tight limiter — keyed by the challenge token itself
+        // (not email/IP) since that's what's actually being brute-forced.
+        RateLimiter::for('2fa-challenge', fn ($request) => Limit::perMinute(5)->by($request->input('challenge_token').'|'.$request->ip()));
     }
 
     /**

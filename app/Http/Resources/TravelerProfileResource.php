@@ -18,10 +18,14 @@ class TravelerProfileResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'title' => $this->title,
+            'gender' => $this->gender,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'date_of_birth' => $this->date_of_birth?->toDateString(),
             'nationality' => $this->nationality,
+            'email' => $this->email,
+            'phone' => $this->phone,
             // Passport number is deliberately never returned once saved —
             // it's write-only from the API's point of view, same reasoning
             // as a card number never round-tripping back from a payment
