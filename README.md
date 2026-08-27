@@ -111,6 +111,27 @@ POST /api/v1/webhooks/payments/paypal
 Confirmation is always webhook-driven — a client-side "payment succeeded"
 callback never confirms a booking on its own.
 
+## Deployment
+
+`deploy.sh` runs an end-to-end deploy from the server (run it as, or via
+sudo to, a user that can write the app dir and manage systemd):
+
+```bash
+./deploy.sh                 # deploy origin/main
+BRANCH=release ./deploy.sh  # a different branch
+./deploy.sh --no-build      # backend-only change, skip the vite build
+```
+
+It puts the app in maintenance mode, fast-forwards the branch, runs
+`composer install --no-dev`, `npm ci && npm run build`, `migrate --force`,
+`db:seed --force` (idempotent — roles/permissions + default admin),
+`optimize` + `filament:optimize`, restarts the Horizon queue worker,
+installs/enables the `deploy/*` systemd units (queue, scheduler, backup),
+reloads PHP-FPM (clears opcache) and nginx, lifts maintenance mode, and
+fails the deploy if `GET /up` doesn't return 200. Any failure restores
+service before exiting. Flags: `--no-build`, `--no-seed`, `--no-migrate`,
+`--no-services`.
+
 ## Tests & code style
 
 ```bash
