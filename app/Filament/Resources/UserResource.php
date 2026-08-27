@@ -7,6 +7,7 @@ use App\Models\User;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\BulkActionGroup;
@@ -88,6 +89,22 @@ class UserResource extends Resource
                         ->dehydrated(false)
                         ->same('password')
                         ->required(fn (string $operation) => $operation === 'create'),
+
+                    // An account a super admin provisions here does not go
+                    // through the customer email-verification flow: left on
+                    // (the default), the user can sign in immediately; turned
+                    // off, `email_verified_at` stays null and the customer
+                    // API refuses the login until they verify (see
+                    // routes/api.php's 'verified' group). Only meaningful at
+                    // creation time — an existing user's verification state
+                    // is managed by verifying, not by this form.
+                    Toggle::make('email_verified_at')
+                        ->label('Email verified')
+                        ->helperText('On: the user can sign in right away. Off: they must verify their email first.')
+                        ->default(true)
+                        ->visible(fn (string $operation) => $operation === 'create')
+                        ->dehydrated(fn (string $operation) => $operation === 'create')
+                        ->dehydrateStateUsing(fn ($state) => $state ? now() : null),
                 ])->columns(2),
 
             Section::make('Roles')

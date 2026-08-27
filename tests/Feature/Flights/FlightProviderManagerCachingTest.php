@@ -5,6 +5,7 @@ namespace Tests\Feature\Flights;
 use App\Models\FlightProvider;
 use App\Services\Flights\FlightProviderManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -44,6 +45,39 @@ class FlightProviderManagerCachingTest extends TestCase
         DB::disableQueryLog();
 
         $this->assertSame(0, $queryCount);
+    }
+
+    public function test_the_cache_holds_plain_serializable_data_not_eloquent_models(): void
+    {
+        // Regression: caching the Eloquent Collection made a serializing
+        // store (redis/file) hand back an incomplete object on the next
+        // read, breaking every search/autocomplete call.
+        $this->makeProvider();
+        app(FlightProviderManager::class)->enabledProviders();
+
+        $cached = Cache::get(FlightProviderManager::CACHE_KEY);
+
+        $this->assertIsArray($cached);
+        $this->assertEquals($cached, unserialize(serialize($cached)));
+        array_walk_recursive($cached, function ($value) {
+            $this->assertFalse(is_object($value), 'The enabled-providers cache must not contain objects');
+        });
+        // credentials are cached as ciphertext, never the decrypted array.
+        $this->assertNotSame(['token' => 'x'], $cached[0]['credentials'] ?? null);
+    }
+
+    public function test_credentials_round_trip_the_cache_as_ciphertext_then_decrypt(): void
+    {
+        $this->makeProvider();
+        app(FlightProviderManager::class)->enabledProviders();
+
+        $cached = Cache::get(FlightProviderManager::CACHE_KEY);
+
+        // Rebuilt exactly as FlightProviderManager::hydrate() does it.
+        $rehydrated = new FlightProvider;
+        $rehydrated->setRawAttributes($cached[0], sync: true);
+
+        $this->assertSame('x', $rehydrated->credential('token'));
     }
 
     public function test_disabling_a_provider_is_reflected_immediately_not_after_the_cache_ttl(): void

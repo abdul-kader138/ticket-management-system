@@ -70,6 +70,31 @@ class UserResourceTest extends TestCase
         $created = User::where('email', 'jamie@example.com')->firstOrFail();
         $this->assertTrue($created->hasRole('operator'));
         $this->assertTrue(Hash::check('Password123', $created->password));
+        // "Email verified" defaults on — an admin-provisioned account skips
+        // the customer verification step and can sign in immediately.
+        $this->assertNotNull($created->email_verified_at);
+    }
+
+    public function test_admin_can_require_a_new_user_to_verify_their_email(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin);
+
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'first_name' => 'Pat',
+                'last_name' => 'Kim',
+                'email' => 'pat@example.com',
+                'password' => 'Password123',
+                'password_confirmation' => 'Password123',
+                'email_verified_at' => false,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertNull(User::where('email', 'pat@example.com')->firstOrFail()->email_verified_at);
     }
 
     public function test_password_is_required_on_create_but_optional_on_edit(): void

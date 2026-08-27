@@ -24,18 +24,24 @@ use Illuminate\Support\Facades\Route;
 // verificationUrl() looks up that exact global route name to build the
 // signed link it emails out (see App\Notifications\Auth\VerifyEmail) and
 // has no awareness of this app's "api.v1.*" route naming. The URI is still
-// placed under /api/v1/auth to match the rest of this file. Clicked from
-// the email itself as a full browser navigation, not an XHR call, so it
-// runs behind the same session the SPA is logged into (auth:sanctum) and
-// stays 'signed' so the link can't be replayed or reused past its expiry.
+// placed under /api/v1/auth to match the rest of this file.
+//
+// Deliberately NOT behind auth:sanctum: an unverified account can no
+// longer establish a session at all (login is refused until the email is
+// verified — see AuthenticatedSessionController::store()), so requiring a
+// session here would be a deadlock. The 'signed' middleware is what
+// authenticates the caller instead — the {id}/{hash} pair is validated in
+// EmailVerificationController and the whole URL carries a signature that
+// can't be forged or replayed past its expiry.
 Route::get('/v1/auth/email/verify/{id}/{hash}', EmailVerificationController::class)
-    ->middleware(['auth:sanctum', 'signed', 'throttle:6,1'])
+    ->middleware(['signed', 'throttle:6,1'])
     ->name('verification.verify');
 
 // Public — Stripe/PayPal call this directly, with no session and no
 // Sanctum token. Signature verification (see PaymentWebhookController) is
 // what authenticates the caller instead. {gateway} is 'stripe' or 'paypal'.
 Route::post('/v1/webhooks/payments/{gateway}', [PaymentWebhookController::class, 'handle'])
+    ->middleware('throttle:payment-webhook')
     ->name('webhooks.payments');
 
 // Versioned from day one — the customer-facing SPA (and any future mobile
@@ -64,6 +70,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('throttle:2fa-challenge')
             ->name('login.challenge');
 
+        // auth:sanctum only, NOT 'verified' — these have to stay reachable
+        // for an account that is authenticated but not yet verified (the
+        // OAuth path can create one, and a session can outlive a later
+        // email change). Everything else below requires a verified email.
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
             Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
@@ -72,7 +82,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         });
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
+    // 'verified' gates the entire customer surface: a logged-in account
+    // whose email isn't verified gets a 403 ("Your email address is not
+    // verified.") from every endpoint in this group. Login itself already
+    // refuses an unverified account (see AuthenticatedSessionController),
+    // so this is the defence-in-depth layer behind that.
+    Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::get('/user', function (Request $request) {
             return $request->user();
         })->name('user');

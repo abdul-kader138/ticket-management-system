@@ -82,6 +82,14 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('search', fn ($request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
 
+        // Payment webhooks are unauthenticated and public — signature
+        // verification + event dedup already protect data integrity, so
+        // this is purely a flood guard. The ceiling is deliberately high:
+        // Stripe/PayPal can legitimately burst hundreds of events per
+        // minute while catching up after an outage, and a dropped webhook
+        // means a stuck payment. Keyed per source IP.
+        RateLimiter::for('payment-webhook', fn ($request) => Limit::perMinute(300)->by($request->ip()));
+
         // A 6-digit TOTP code has a small enough space that this endpoint
         // needs its own tight limiter — keyed by the challenge token itself
         // (not email/IP) since that's what's actually being brute-forced.

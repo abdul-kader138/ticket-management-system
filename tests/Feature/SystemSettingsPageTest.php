@@ -40,12 +40,12 @@ class SystemSettingsPageTest extends TestCase
 
         Livewire::test(SystemSettings::class)
             ->fillForm([
-                'app_name'                 => 'Acme Support',
-                'app_tagline'              => 'Tickets handled right.',
-                'admin_theme'              => 'emerald',
-                'admin_panel_theme_mode'   => 'light',
-                'mail_from_name'           => 'Acme Support',
-                'mail_from_address'        => 'no-reply@acmesupport.test',
+                'app_name' => 'Acme Support',
+                'app_tagline' => 'Tickets handled right.',
+                'admin_theme' => 'emerald',
+                'admin_panel_theme_mode' => 'light',
+                'mail_from_name' => 'Acme Support',
+                'mail_from_address' => 'no-reply@acmesupport.test',
                 'staff_notification_email' => 'staff@acmesupport.test',
             ])
             ->call('save')

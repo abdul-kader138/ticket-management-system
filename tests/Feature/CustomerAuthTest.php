@@ -41,14 +41,48 @@ class CustomerAuthTest extends TestCase
             'password_confirmation' => 'Password123',
         ]);
 
-        $response->assertCreated()->assertJsonPath('email', 'ada@example.com');
+        $response->assertCreated()
+            ->assertJsonPath('email', 'ada@example.com')
+            ->assertJsonPath('email_verified', false);
 
         $user = User::where('email', 'ada@example.com')->firstOrFail();
         $this->assertTrue($user->getAllPermissions()->isEmpty());
         $this->assertFalse($user->canAccessPanel(Filament::getDefaultPanel()));
-        $this->assertAuthenticatedAs($user, 'web');
+
+        // Registration does not sign the user in — an unverified account
+        // holds no session.
+        $this->assertGuest('web');
+        $this->assertNull($user->email_verified_at);
 
         Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_an_unverified_account_cannot_log_in_and_is_sent_a_fresh_link(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->unverified()->create(['password' => Hash::make('Password123')]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'Password123',
+        ])
+            ->assertForbidden()
+            ->assertJsonPath('code', 'email_unverified');
+
+        $this->assertGuest('web');
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_an_unverified_session_is_blocked_from_the_customer_api(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        // Even if a session is somehow established (e.g. the OAuth path),
+        // the 'verified' middleware fences off every resource endpoint.
+        $this->actingAs($user, 'web')
+            ->getJson('/api/v1/account')
+            ->assertForbidden();
     }
 
     public function test_registration_rejects_a_duplicate_email(): void
@@ -130,31 +164,31 @@ class CustomerAuthTest extends TestCase
         Notification::assertSentTo($fresh, VerifyEmail::class);
     }
 
-    public function test_a_signed_verification_link_marks_the_email_verified(): void
+    public function test_a_signed_verification_link_marks_the_email_verified_without_a_session(): void
     {
-        $user = User::factory()->create(['email_verified_at' => null]);
+        $user = User::factory()->unverified()->create();
 
         $url = URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), [
             'id' => $user->id,
             'hash' => sha1($user->email),
         ]);
 
-        $this->actingAs($user, 'web')->get($url)->assertRedirect();
+        // No actingAs() — the signed link is the credential.
+        $this->get($url)->assertRedirect();
 
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
     }
 
-    public function test_a_tampered_verification_link_is_rejected(): void
+    public function test_a_verification_link_whose_hash_does_not_match_the_account_is_rejected(): void
     {
-        $user = User::factory()->create(['email_verified_at' => null]);
-        $other = User::factory()->create(['email_verified_at' => null]);
+        $user = User::factory()->unverified()->create();
 
         $url = URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), [
-            'id' => $other->id,
-            'hash' => sha1($other->email),
+            'id' => $user->id,
+            'hash' => sha1('someone-elses-address@example.com'),
         ]);
 
-        $this->actingAs($user, 'web')->get($url)->assertForbidden();
+        $this->get($url)->assertForbidden();
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }

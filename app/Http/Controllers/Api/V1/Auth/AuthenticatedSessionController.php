@@ -43,6 +43,20 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        // An unverified account cannot sign in. Credentials were correct,
+        // so quietly send a fresh verification link (the one from
+        // registration may have expired) and tell the client to route the
+        // user to a "check your email" screen. No session is established
+        // and 2FA is not even attempted.
+        if (! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+
+            return response()->json([
+                'message' => "Your email address isn't verified yet. We've sent you a new verification link — check your inbox.",
+                'code' => 'email_unverified',
+            ], 403);
+        }
+
         if ($this->requiresTwoFactor($user)) {
             $token = Str::random(40);
 

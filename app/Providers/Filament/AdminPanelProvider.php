@@ -21,6 +21,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -256,7 +257,7 @@ CSS.$custom;
     // actually set — otherwise clicking it just throws (Socialite has
     // nothing to redirect to), which is a worse experience than not
     // showing it on a fresh install that hasn't configured OAuth yet.
-    protected static function resolveGoogleAuthButton(): \Illuminate\Contracts\View\View|string
+    protected static function resolveGoogleAuthButton(): View|string
     {
         if (blank(config('services.google.client_id')) || blank(config('services.google.client_secret'))) {
             return '';

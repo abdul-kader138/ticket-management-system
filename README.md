@@ -1,97 +1,128 @@
-# Ticket Management System
+# Flightpath
 
-A Laravel application (PHP 8.3, [Filament](https://filamentphp.com) admin panel, React + Vite + Tailwind
-frontend) for managing support/service tickets.
+A self-serve flight booking platform built on Laravel 13 and Filament 3 —
+search, book, pay, cancel and change flights, with tiered subscriptions,
+per-user search quotas, promotions and referrals. The repository directory
+is still named `ticket-management-system` for historical reasons; the
+application is a flight retailer.
 
-## Tech Stack
+The full architecture and the phased plan it was built to are in
+[`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-- **Backend:** Laravel 8.3+, Filament (admin panel)
-- **Frontend:** React 19, Vite, Tailwind CSS
-- **Database:** MySQL
+## Tech stack
 
-## Getting Started
+- **Backend:** PHP 8.3+, Laravel 13
+- **Admin/ops console:** Filament 3 (`/` — session auth, gated by Spatie
+  roles/permissions via Filament Shield)
+- **Customer API:** `/api/v1/*` — Laravel Sanctum SPA cookie auth, versioned
+- **Frontend:** React 19 + Vite + Tailwind (customer SPA, scaffolded)
+- **Queue/cache/session:** Redis, with Laravel Horizon supervising workers
+- **Flight sourcing:** Duffel today, behind a `FlightProviderContract` so
+  more providers are a `flight_providers` row, not a code change
+- **Payments:** Stripe (PaymentIntents + Elements) and PayPal (Orders v2),
+  behind a shared `PaymentGatewayContract`; webhook-driven confirmation
+- **Auth:** email/password, Google OAuth (Socialite), TOTP 2FA
+- **Observability:** Sentry (opt-in via `SENTRY_LARAVEL_DSN`), Spatie
+  activity log, dedicated `audit` log channel on money/booking paths
+
+## Key domains
+
+| Area | Where |
+|---|---|
+| Flight search + provider abstraction | `app/Services/Flights` |
+| Search quotas (Redis counters, DB audit trail) | `app/Services/Flights/SearchQuotaService.php` |
+| Booking lifecycle (state machine + events) | `app/Services/Bookings`, `app/Models/Booking.php` |
+| Payments, refunds, webhooks, reconciliation | `app/Services/Payments`, `app/Jobs` |
+| Subscriptions + auto-assigned loyalty tiers | `app/Services/Subscriptions` |
+| Promotions, coupons, referral rewards | `app/Services/Promotions`, `app/Observers/BookingObserver.php` |
+| Admin resources | `app/Filament/Resources` |
+
+## Getting started
 
 ### Prerequisites
 
-- PHP 8.3+
-- Composer
+- PHP 8.3+, Composer
 - Node.js + npm
-- MySQL
+- Redis (cache, session, queue)
+- MySQL 8+ (SQLite is used for the test suite only)
 
 ### Setup
 
 ```bash
-# Install dependencies
 composer install
 npm install
 
-# Configure environment
 cp .env.example .env
 php artisan key:generate
 
-# Set DB_* values in .env, then create the database, then run migrations
+# Set DB_* and REDIS_* in .env, create the database, then:
 php artisan migrate
 
-# Build frontend assets
-npm run dev    # for local development
-# or
-npm run build  # for production
+# Seed roles/permissions and the default super admin (see ADMIN_* in .env)
+php artisan db:seed
+
+npm run dev      # local
+# npm run build  # production
 ```
 
-### Running the app
+### Running locally
+
+```bash
+composer dev
+```
+
+That runs `php artisan serve`, a queue worker, `pail` log tailing, and Vite
+concurrently. Or run the pieces yourself:
 
 ```bash
 php artisan serve
+php artisan queue:listen --tries=1
+npm run dev
 ```
 
-Visit `http://localhost:8000`.
+The admin/ops console is at `/`. The customer API is under `/api/v1`.
 
-## Publishing this project to GitHub
+## Background processing
 
-This project is a fresh Git repository. Before publishing it, check that no
-passwords, API keys, or other confidential data are included. The `.env` file
-is ignored and must not be committed.
+Queued work (webhook processing, ticket issuance, tier recalculation) and
+scheduled commands (`bookings:expire-holds`, `payments:reconcile`,
+`subscriptions:expire`, `data:prune-retention`) both need to be running in
+any non-local environment:
 
-1. Sign in to [GitHub](https://github.com) and select **New repository**.
-2. Enter a repository name, such as `ticket-management-system`, and choose
-   **Private** or **Public**.
-3. Leave **Add a README**, **Add .gitignore**, and **Choose a license** disabled,
-   because this local project already contains Git files.
-4. Create the repository, then copy its HTTPS URL.
-5. From this project's directory, run the following commands, replacing the URL
-   with the one GitHub provides:
+- **Production:** the systemd units in `deploy/` — a Horizon supervisor and
+  a `schedule:run` timer — installed by `deploy.sh`.
+- **Local:** `composer dev` covers the queue; run `php artisan schedule:work`
+  in another terminal if you need the scheduled commands.
+
+Horizon's dashboard is at `/horizon` (permission-gated).
+
+## Payments configuration
+
+Stripe and PayPal credentials are set in the admin console under **System
+Settings → Payments**, not in `.env`. Each gateway is inert until both its
+API keys and its webhook signing secret are present. Point the gateways'
+webhooks at:
+
+```
+POST /api/v1/webhooks/payments/stripe
+POST /api/v1/webhooks/payments/paypal
+```
+
+Confirmation is always webhook-driven — a client-side "payment succeeded"
+callback never confirms a booking on its own.
+
+## Tests & code style
 
 ```bash
-git status
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/ticket-management-system.git
-git push -u origin main
+php artisan test        # PHPUnit, SQLite in-memory
+vendor/bin/pint         # format
+vendor/bin/pint --test  # check formatting (CI does this)
 ```
 
-If Git reports that `origin` already exists, update it instead:
-
-```bash
-git remote set-url origin https://github.com/YOUR-USERNAME/ticket-management-system.git
-git push -u origin main
-```
-
-GitHub may ask you to authenticate in a browser or use a personal access token;
-your normal GitHub password cannot be used as an HTTPS Git password.
-
-For later updates, use:
-
-```bash
-git add .
-git commit -m "Describe the changes"
-git push
-```
-
-Do not commit `.env`. Other developers should create it locally from
-`.env.example`, then install and configure the application in their own
-environment.
+CI (`.github/workflows/ci.yml`) runs Pint and the test suite on every push
+and PR, and flags destructive migrations added in a PR unless the migration
+carries a `// migration-safety: reviewed` sign-off.
 
 ## License
 
-This project is proprietary. All rights reserved.
+Proprietary. All rights reserved.

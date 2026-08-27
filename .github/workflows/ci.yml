@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Pint + PHPUnit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_sqlite, sqlite3, redis, bcmath, intl, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Check code style (Pint)
+        run: vendor/bin/pint --test
+
+      - name: Run tests
+        run: php artisan test
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+
+  migration-safety:
+    name: Migration safety
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Flag destructive migrations added in this PR
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+
+          ADDED=$(git diff --name-only --diff-filter=A "$BASE"...HEAD -- 'database/migrations/**/*.php' || true)
+
+          if [ -z "$ADDED" ]; then
+            echo "No new migrations in this PR."
+            exit 0
+          fi
+
+          echo "New migrations:"
+          echo "$ADDED"
+
+          # Destructive schema operations that drop or rename data. A PR that
+          # genuinely needs one must add the line
+          #   // migration-safety: reviewed
+          # to that migration file, which is the reviewer's explicit sign-off.
+          PATTERN='->drop\(|dropColumn|dropColumns|dropIfExists|dropPrimary|dropUnique|dropIndex|dropForeign|renameColumn|->rename\(|truncate\('
+
+          FAILED=0
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if grep -Eq "$PATTERN" "$file"; then
+              if grep -q 'migration-safety: reviewed' "$file"; then
+                echo "OK (reviewed): $file"
+              else
+                echo "::error file=$file::Destructive schema change without a '// migration-safety: reviewed' sign-off"
+                FAILED=1
+              fi
+            fi
+          done <<< "$ADDED"
+
+          exit $FAILED

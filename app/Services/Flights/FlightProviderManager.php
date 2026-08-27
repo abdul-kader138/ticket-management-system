@@ -34,21 +34,44 @@ class FlightProviderManager
      */
     public function enabledProviders(): array
     {
-        // Only the (already-encrypted-at-rest) model rows are cached, not
-        // constructed driver instances — a driver decrypts its credentials
-        // in its own constructor, and that decrypted secret has no business
-        // sitting in the cache store even briefly.
-        $providers = Cache::remember(self::CACHE_KEY, now()->addMinutes(10), fn () => FlightProvider::query()
+        // Cache the raw column values (an array of plain scalars), never
+        // the Eloquent models or the Collection wrapping them — a
+        // serializing cache store (redis/file) can't round-trip those and
+        // hands back an incomplete object on the next read. `credentials`
+        // stays in the cache exactly as it sits in the database: the
+        // encrypted ciphertext, decrypted lazily by the model's cast only
+        // once a driver actually reads it, so no plaintext secret ever
+        // touches the cache.
+        $rows = Cache::remember(self::CACHE_KEY, now()->addMinutes(10), fn () => FlightProvider::query()
             ->enabled()
             ->orderBy('priority')
             ->get()
+            ->map(fn (FlightProvider $provider) => $provider->getAttributes())
+            ->all()
         );
 
-        return $providers
+        return collect($rows)
+            ->map(fn (array $attributes) => $this->hydrate($attributes))
             ->map(fn (FlightProvider $provider) => $this->driver($provider))
             ->filter(fn (FlightProviderContract $driver) => $driver->configured())
             ->values()
             ->all();
+    }
+
+    /**
+     * Rebuilds a FlightProvider from its cached raw attributes — marked as
+     * existing so it behaves like a loaded record (casts, relations,
+     * ->id), but never saved from here.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function hydrate(array $attributes): FlightProvider
+    {
+        $provider = new FlightProvider;
+        $provider->setRawAttributes($attributes, sync: true);
+        $provider->exists = true;
+
+        return $provider;
     }
 
     public function driver(FlightProvider $provider): FlightProviderContract

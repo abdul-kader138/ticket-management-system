@@ -2,11 +2,11 @@
 
 namespace App\Services\Payments;
 
+use App\Jobs\IssueProviderOrderJob;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\UserSubscription;
-use App\Services\Bookings\BookingService;
 use App\Services\Payments\DTO\WebhookOutcome;
 use App\Services\Subscriptions\SubscriptionService;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +26,6 @@ class PaymentService
 {
     public function __construct(
         private readonly PaymentGatewayManager $gateways,
-        private readonly BookingService $bookings,
         private readonly SubscriptionService $subscriptions,
     ) {}
 
@@ -244,20 +243,14 @@ class PaymentService
         $payable = $payment->payable;
 
         if ($payable instanceof Booking && $payable->status === Booking::STATUS_PENDING_PAYMENT) {
-            try {
-                $this->bookings->confirmWithProvider($payable);
-            } catch (Throwable $e) {
-                // Money has been captured but the ticket wasn't issued —
-                // this must not fail silently. Booking stays
-                // 'pending_payment' so it's visibly stuck in the admin
-                // resource until someone reconciles it by hand; see
-                // docs/ROADMAP.md, Phase 9 for the alerting this really needs.
-                Log::stack(['stack', 'audit'])->critical('Payment succeeded but provider order creation failed — needs manual reconciliation', [
-                    'booking_id' => $payable->id,
-                    'payment_id' => $payment->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            // Issuing the provider order is a slow, failure-prone external
+            // call and must not run inline on the webhook/reconcile path
+            // that got us here — a transient provider error would otherwise
+            // capture the money and lose the ticket with no retry. The job
+            // retries with backoff and escalates to staff on permanent
+            // failure; the booking stays 'pending_payment' until then. See
+            // App\Jobs\IssueProviderOrderJob.
+            IssueProviderOrderJob::dispatch($payable->id);
 
             return;
         }

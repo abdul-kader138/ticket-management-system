@@ -44,8 +44,23 @@ class CustomerGoogleAuthController extends Controller
             ?? User::where('email', $googleUser->getEmail())->first();
 
         if ($user) {
+            // Google has already asserted this email address, so an account
+            // that signs in this way is verified from here on — without
+            // this, a pre-existing unverified account linking Google would
+            // pass through login but then hit the 'verified' wall on every
+            // /api/v1 call (see routes/api.php).
+            $fill = [];
+
             if (! $user->google_id) {
-                $user->forceFill(['google_id' => $googleUser->getId()])->save();
+                $fill['google_id'] = $googleUser->getId();
+            }
+
+            if (! $user->hasVerifiedEmail()) {
+                $fill['email_verified_at'] = now();
+            }
+
+            if ($fill !== []) {
+                $user->forceFill($fill)->save();
             }
         } else {
             $user = User::create([

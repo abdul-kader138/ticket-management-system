@@ -7,7 +7,6 @@ use App\Http\Requests\Api\Auth\RegisterRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 
 class RegisteredUserController extends Controller
 {
@@ -16,6 +15,12 @@ class RegisteredUserController extends Controller
      * keeps them out of the admin panel (User::canAccessPanel() requires
      * one) — unlike App\Filament\Auth\Register, which assigns 'panel_user'
      * for the opposite reason.
+     *
+     * Registration does NOT sign the user in: an unverified account can't
+     * hold a session (see AuthenticatedSessionController::store()). The
+     * response carries the created customer with `email_verified: false` so
+     * the SPA can send the user straight to a "verify your email" screen;
+     * the verification link works with no session (see routes/api.php).
      */
     public function store(RegisterRequest $request): JsonResponse
     {
@@ -37,9 +42,6 @@ class RegisteredUserController extends Controller
         }
 
         $user->sendEmailVerificationNotification();
-
-        Auth::guard('web')->login($user);
-        $request->session()->regenerate();
 
         return (new CustomerResource($user))
             ->response()

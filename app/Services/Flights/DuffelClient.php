@@ -194,6 +194,14 @@ class DuffelClient implements FlightProviderContract
      */
     public function confirmChangeOffer(string $changeOfferId): array
     {
+        if (! config('flights.duffel.order_change_confirmation_verified')) {
+            throw new DuffelApiException(
+                'Duffel order-change confirmation is disabled: the /air/order_changes call in DuffelClient '
+                .'has not been verified against Duffel\'s API. Set DUFFEL_ORDER_CHANGE_CONFIRMATION_VERIFIED=true '
+                .'once it has. See config/flights.php.'
+            );
+        }
+
         try {
             $response = $this->client()
                 ->post('/air/order_changes', ['data' => ['order_change_offer_id' => $changeOfferId]])
