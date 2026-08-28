@@ -24,10 +24,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/flights/search', [FlightSearchController::class, 'search'])
         ->middleware('throttle:search')
         ->name('flights.search.submit');
-    Route::get('/flights/airports', [FlightSearchController::class, 'airports'])->name('flights.airports');
+    // Autocomplete — one request per keystroke (debounced client-side). Cap
+    // it so a script can't hammer the provider's places API behind our quota.
+    Route::get('/flights/airports', [FlightSearchController::class, 'airports'])
+        ->middleware('throttle:60,1')
+        ->name('flights.airports');
 });
 
-Route::prefix('admin/auth/google')->name('auth.google.')->group(function () {
+Route::prefix('admin/auth/google')->name('auth.google.')->middleware('throttle:30,1')->group(function () {
     Route::get('/redirect', [GoogleAuthController::class, 'redirect'])->name('redirect');
     Route::get('/callback', [GoogleAuthController::class, 'callback'])->name('callback');
 });
@@ -36,7 +40,7 @@ Route::prefix('admin/auth/google')->name('auth.google.')->group(function () {
 // (OAuth can't be an XHR call), separate from the admin one above so a
 // customer login never assigns the admin's 'panel_user' role. See
 // App\Http\Controllers\Auth\CustomerGoogleAuthController.
-Route::prefix('auth/google')->name('customer.auth.google.')->group(function () {
+Route::prefix('auth/google')->name('customer.auth.google.')->middleware('throttle:30,1')->group(function () {
     Route::get('/redirect', [CustomerGoogleAuthController::class, 'redirect'])->name('redirect');
     Route::get('/callback', [CustomerGoogleAuthController::class, 'callback'])->name('callback');
 });
