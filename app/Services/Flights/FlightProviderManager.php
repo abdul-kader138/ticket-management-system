@@ -107,8 +107,13 @@ class FlightProviderManager
 
         $cached = Cache::get($cacheKey);
 
-        if ($cached !== null) {
+        if ($cached instanceof OfferCollection) {
             return $cached;
+        }
+
+        if ($cached !== null) {
+            // Stale/incompatible payload (e.g. serialized under an old class name).
+            Cache::forget($cacheKey);
         }
 
         $this->quota->ensureNotExceeded($user);

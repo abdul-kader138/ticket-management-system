@@ -90,6 +90,19 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
             || $this->getAllPermissions()->isNotEmpty();
     }
 
+    /**
+     * A staff account (belongs in the Filament panel) versus a customer
+     * account (belongs in the frontend SPA). Same test as canAccessPanel()
+     * but without needing a Panel instance — used by
+     * App\Notifications\Auth\VerifyEmail to decide which verification link
+     * to email.
+     */
+    public function isStaff(): bool
+    {
+        return $this->hasAnyRole(['super_admin', 'panel_user'])
+            || $this->getAllPermissions()->isNotEmpty();
+    }
+
     public function hasEnabledTwoFactorAuthentication(): bool
     {
         return filled($this->two_factor_secret) && filled($this->two_factor_confirmed_at);
@@ -101,16 +114,17 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     }
 
     /**
-     * Customers (registered users with no Filament role/permission — see
-     * canAccessPanel() above) never see Filament's own verify/reset pages,
-     * so their email links need to point at the customer app instead.
+     * App\Notifications\Auth\VerifyEmail picks the right link per audience:
+     * customers get the signed `verification.verify` route (routes/api.php)
+     * that redirects to the frontend SPA; staff (isStaff()) get the signed,
+     * auth-free `staff.verification.verify` route (routes/web.php) that
+     * verifies and drops them into the panel — see that class.
      *
-     * Safe to override here: Filament's own auth pages build and send their
-     * own Filament\Notifications\Auth\* notifications directly (see
-     * RequestPasswordReset::request() and EmailVerificationPrompt::
-     * sendEmailVerificationNotification()) rather than calling these
-     * Authenticatable defaults, so staff password-reset/verification is
-     * unaffected by this override.
+     * This method is reached both by Laravel's `Registered` listener (panel
+     * AND API registration) and by the panel's resend action (see
+     * App\Filament\Auth\EmailVerificationPrompt). Filament's Register page
+     * would also fire its own login-gated notification, so that is
+     * suppressed in App\Filament\Auth\Register.
      */
     public function sendEmailVerificationNotification(): void
     {

@@ -30,9 +30,9 @@ class FlightProviderResource extends Resource
 {
     protected static ?string $model = FlightProvider::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-paper-airplane';
+    protected static ?string $navigationIcon = 'heroicon-o-server-stack';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 20;
 
     protected static ?string $recordTitleAttribute = 'name';
 

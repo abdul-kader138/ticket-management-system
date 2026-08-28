@@ -33,6 +33,21 @@ class Register extends BaseRegister
     }
 
     /**
+     * No-op on purpose. Filament's default sends its own
+     * Filament\Notifications\Auth\VerifyEmail with a panel URL that sits
+     * behind Authenticate middleware — it 302s to /login when the email is
+     * opened on another device. parent::register() also fires the
+     * `Registered` event, whose listener calls
+     * User::sendEmailVerificationNotification() → App\Notifications\Auth\
+     * VerifyEmail (staff-aware, auth-free link). Suppressing this avoids a
+     * second, worse email.
+     */
+    protected function sendEmailVerificationNotification(Model $user): void
+    {
+        // Intentionally empty — see the `Registered` event listener.
+    }
+
+    /**
      * @return array<int|string, string|Form>
      */
     protected function getForms(): array

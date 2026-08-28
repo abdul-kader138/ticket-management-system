@@ -2,8 +2,17 @@
 
 use App\Http\Controllers\Auth\CustomerGoogleAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Auth\StaffVerifyEmailController;
 use App\Http\Controllers\FlightSearchController;
 use Illuminate\Support\Facades\Route;
+
+// Staff (panel) email verification. No auth middleware on purpose — the
+// `signed` middleware secures it — so the link works when opened on a
+// device the user isn't logged in on. Customers use `verification.verify`
+// in routes/api.php instead. See App\Notifications\Auth\VerifyEmail.
+Route::get('/admin/email/verify/{id}/{hash}', StaffVerifyEmailController::class)
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('staff.verification.verify');
 
 Route::middleware('auth')->group(function () {
     // The panel-facing "Search Flights" page (App\Filament\Pages\FlightSearch)

@@ -32,11 +32,11 @@ class SubscriptionPlanResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-star';
 
-    protected static ?int $navigationSort = 85;
+    protected static ?int $navigationSort = 10;
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Administration';
+        return 'Billing';
     }
 
     public static function form(Form $form): Form

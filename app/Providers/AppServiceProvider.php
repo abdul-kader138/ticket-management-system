@@ -116,22 +116,55 @@ class AppServiceProvider extends ServiceProvider
             'mail.from.address' => Setting::get('mail_from_address', config('mail.from.address')),
         ]);
 
-        if ($host = Setting::get('mail_host')) {
+        $vendors = Setting::get('mail_vendors', []);
+        $activeVendorKey = Setting::get('mail_active_vendor', 'smtp');
+        $activeVendor = is_array($vendors)
+            ? collect($vendors)->first(fn ($vendor) => ($vendor['key'] ?? null) === $activeVendorKey)
+            : null;
+
+        // Compatibility with installations that have not yet saved the new
+        // vendor profile setting.
+        if (! is_array($activeVendor)) {
+            if (is_array($vendors) && $vendors !== []) {
+                // Never silently send through a different provider when the
+                // selected profile was removed or renamed.
+                config(['mail.default' => 'log']);
+
+                return;
+            }
+
+            $activeVendor = [
+                'transport' => 'smtp',
+                'host' => Setting::get('mail_host'),
+                'port' => Setting::get('mail_port', 587),
+                'username' => Setting::get('mail_username'),
+                'password' => Setting::get('mail_password'),
+                'encryption' => Setting::get('mail_encryption', 'tls'),
+            ];
+        }
+
+        if (($activeVendor['transport'] ?? 'smtp') === 'log') {
+            config(['mail.default' => 'log']);
+
+            return;
+        }
+
+        if ($host = ($activeVendor['host'] ?? null)) {
             config([
                 'mail.default' => 'smtp',
                 'mail.mailers.smtp.host' => $host,
-                'mail.mailers.smtp.port' => Setting::get('mail_port', 587),
-                'mail.mailers.smtp.username' => Setting::get('mail_username'),
-                'mail.mailers.smtp.password' => Setting::get('mail_password'),
+                'mail.mailers.smtp.port' => $activeVendor['port'] ?? 587,
+                'mail.mailers.smtp.username' => $activeVendor['username'] ?? null,
+                'mail.mailers.smtp.password' => $activeVendor['password'] ?? null,
                 // The stored value is the admin-facing choice ("tls"/"ssl" —
-                // see SystemSettings' mail_encryption select), NOT a valid
-                // Symfony Mailer scheme. Symfony only accepts "smtp"
-                // (STARTTLS, negotiated automatically — what "TLS" on port
-                // 587 means in practice) or "smtps" (implicit TLS, port
-                // 465 — what "SSL" means). Passing "tls"/"ssl" straight
-                // through throws UnsupportedSchemeException and silently
-                // fails every queued mail job.
-                'mail.mailers.smtp.scheme' => Setting::get('mail_encryption') === 'ssl' ? 'smtps' : 'smtp',
+                // see SystemSettings' encryption select), NOT a valid Symfony
+                // Mailer scheme. Symfony only accepts "smtp" (STARTTLS,
+                // negotiated automatically — what "TLS" on port 587 means in
+                // practice) or "smtps" (implicit TLS, port 465 — what "SSL"
+                // means). Passing "tls"/"ssl" straight through throws
+                // UnsupportedSchemeException and silently fails every queued
+                // mail job.
+                'mail.mailers.smtp.scheme' => ($activeVendor['encryption'] ?? 'tls') === 'ssl' ? 'smtps' : 'smtp',
             ]);
         }
     }

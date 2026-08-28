@@ -23,13 +23,13 @@ class ActivityLogResource extends Resource
 {
     protected static ?string $model = Activity::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-shield-check';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $navigationLabel = 'Audit Log';
 
     protected static ?string $modelLabel = 'Audit Log Entry';
 
-    protected static ?int $navigationSort = 90;
+    protected static ?int $navigationSort = 30;
 
     public static function getNavigationGroup(): ?string
     {

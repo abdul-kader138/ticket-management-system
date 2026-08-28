@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\EditProfile;
+use App\Filament\Auth\EmailVerificationPrompt;
 use App\Filament\Auth\Login;
 use App\Filament\Auth\Register;
 use App\Filament\Auth\ResetPassword;
@@ -15,7 +16,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Auth\EmailVerification\EmailVerificationPrompt;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Auth\PasswordReset\RequestPasswordReset;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -60,7 +61,7 @@ class AdminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->registration(Register::class)
             ->passwordReset(RequestPasswordReset::class, ResetPassword::class)
-            ->emailVerification()
+            ->emailVerification(EmailVerificationPrompt::class)
             ->profile(EditProfile::class, isSimple: false)
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
@@ -76,6 +77,17 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::STYLES_AFTER,
                 fn () => self::resolveAdminPanelModeStyles(),
             )
+            ->sidebarCollapsibleOnDesktop()
+            ->sidebarWidth('15rem')
+            ->navigationGroups([
+                NavigationGroup::make('Operations')
+                    ->icon('heroicon-o-rectangle-stack'),
+                NavigationGroup::make('Billing')
+                    ->icon('heroicon-o-banknotes'),
+                NavigationGroup::make('Administration')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->collapsed(),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -247,10 +259,67 @@ CSS,
             default => '',
         };
 
-        // Always hide the built-in theme switcher — we manage it via System Settings
-        return <<<'CSS'
-<style>.fi-theme-switcher { display: none !important; }</style>
-CSS.$custom;
+        // Always applied, regardless of theme mode:
+        //  - hide the built-in theme switcher (managed via System Settings)
+        //  - left sidebar polish: tighter group labels, rounded items with a
+        //    smooth hover, and a brand-accented active state with a left bar.
+        //    Scoped to .fi-sidebar and uses Filament's own --primary-* vars so
+        //    it follows the configured brand colour and both light/dark modes.
+        $base = <<<'CSS'
+<style>
+    .fi-theme-switcher { display: none !important; }
+
+    .fi-sidebar-nav { gap: .125rem; padding-top: .5rem; }
+
+    .fi-sidebar-group + .fi-sidebar-group { margin-top: 1rem; }
+
+    .fi-sidebar-group-label {
+        font-size: .6875rem;
+        font-weight: 600;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        opacity: .6;
+    }
+
+    .fi-sidebar-item-button {
+        border-radius: .5rem;
+        transition: background-color .15s ease, color .15s ease;
+        position: relative;
+    }
+
+    .fi-sidebar-item-button:hover {
+        background-color: rgb(var(--gray-500) / .08);
+    }
+
+    .fi-sidebar-item-icon { transition: color .15s ease; }
+
+    .fi-sidebar-item.fi-active .fi-sidebar-item-button,
+    .fi-sidebar-item-button.fi-active {
+        background-color: rgb(var(--primary-500) / .12);
+        font-weight: 600;
+    }
+
+    .fi-sidebar-item.fi-active .fi-sidebar-item-button::before,
+    .fi-sidebar-item-button.fi-active::before {
+        content: "";
+        position: absolute;
+        inset-inline-start: -.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 1.25rem;
+        border-radius: 9999px;
+        background-color: rgb(var(--primary-500));
+    }
+
+    .fi-sidebar-item.fi-active .fi-sidebar-item-icon,
+    .fi-sidebar-item-button.fi-active .fi-sidebar-item-icon {
+        color: rgb(var(--primary-500));
+    }
+</style>
+CSS;
+
+        return $base.$custom;
     }
 
     // Only render the button once GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET are

@@ -32,7 +32,7 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?int $navigationSort = 90;
+    protected static ?int $navigationSort = 10;
 
     // A real column — 'name' is a computed accessor (first_name + last_name),
     // and global search below runs `where($attribute, 'like', ...)` directly

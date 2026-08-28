@@ -13,61 +13,65 @@
 
     {{-- This view is embedded via an iframe by App\Filament\Pages\FlightSearch, --}}
     {{-- which already provides the app header/sidebar — no header here. --}}
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <main class="max-w-5xl mx-auto px-4 py-8">
+
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+            <div>
+                <h1 class="text-lg font-semibold text-[var(--fg)]">Search flights</h1>
+                <p class="text-sm text-[var(--muted)] mt-0.5">Compare live fares across airlines and routes.</p>
+            </div>
+
+            @if($flightApiEnabled)
+                @php
+                    // -1 is App\Models\SubscriptionPlan::UNLIMITED — see
+                    // App\Services\Flights\SearchQuotaService::remaining().
+                    $dayLabel = $quotaRemaining['day'] === -1 ? 'Unlimited today' : $quotaRemaining['day'].' '.Str::plural('search', $quotaRemaining['day']).' left today';
+                    $monthLabel = $quotaRemaining['month'] === -1 ? 'unlimited this month' : $quotaRemaining['month'].' left this month';
+                    $low = $quotaRemaining['day'] !== -1 && $quotaRemaining['day'] <= 3;
+                @endphp
+                <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium {{ $low ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-[var(--card-border)] bg-[var(--card)] text-[var(--muted)]' }}">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" /></svg>
+                    {{ $dayLabel }} &middot; {{ $monthLabel }}
+                </span>
+            @endif
+        </div>
 
         @if(session('status'))
-            <div class="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm px-4 py-3">
-                {{ session('status') }}
+            <div class="mb-4 flex items-start gap-2.5 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm px-4 py-3">
+                <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" /></svg>
+                <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if(session('error'))
-            <div class="mb-4 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3">
-                {{ session('error') }}
+            <div class="mb-4 flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3">
+                <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" /></svg>
+                <span>{{ session('error') }}</span>
             </div>
         @endif
 
         @unless($flightApiEnabled)
-            <div class="mb-4 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-3">
-                Flight search is running in preview mode — an administrator hasn't connected a flight provider yet
-                (Flight Providers).
+            <div class="mb-4 flex items-start gap-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-3">
+                <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" /></svg>
+                <span><span class="font-medium">Preview mode.</span> No flight provider is connected yet — searches return sample data. An administrator can add one under <span class="font-medium">Flight Providers</span>.</span>
             </div>
         @endunless
-
-        @if($flightApiEnabled)
-            @php
-                // -1 is App\Models\SubscriptionPlan::UNLIMITED — see
-                // App\Services\Flights\SearchQuotaService::remaining().
-                $dayLabel = $quotaRemaining['day'] === -1 ? 'Unlimited searches today' : $quotaRemaining['day'].' '.Str::plural('search', $quotaRemaining['day']).' left today';
-                $monthLabel = $quotaRemaining['month'] === -1 ? 'unlimited this month' : $quotaRemaining['month'].' left this month';
-            @endphp
-            <div class="mb-4 rounded-md bg-[var(--card)] border border-[var(--card-border)] text-[var(--muted)] text-sm px-4 py-3">
-                {{ $dayLabel }} &middot; {{ $monthLabel }}.
-            </div>
-        @endif
 
         <div
             x-data="flightSearch()"
             x-init="init()"
-            class="bg-[var(--card)] text-[var(--fg)] rounded-xl shadow-sm border border-[var(--card-border)] p-6"
+            class="relative bg-[var(--card)] text-[var(--fg)] rounded-xl shadow-sm border border-[var(--card-border)] p-6"
         >
-            <div class="flex items-center justify-between mb-5">
-                <div class="flex items-center gap-6 text-sm font-medium">
+            <div class="flex items-center justify-between gap-3 mb-5">
+                <div class="inline-flex rounded-lg bg-[var(--hover-bg)] p-1 text-sm font-medium">
                     <template x-for="opt in tripTypes" :key="opt.value">
                         <button
                             type="button"
                             @click="setTripType(opt.value)"
-                            class="flex items-center gap-2 pb-1 border-b-2 transition-colors"
-                            :class="tripType === opt.value ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--muted)] hover:text-[var(--fg)]'"
-                        >
-                            <span
-                                class="w-3.5 h-3.5 rounded-full border flex items-center justify-center"
-                                :class="tripType === opt.value ? 'border-[var(--brand)]' : 'border-[var(--card-border)]'"
-                            >
-                                <span x-show="tripType === opt.value" class="w-1.5 h-1.5 rounded-full bg-[var(--brand)]"></span>
-                            </span>
-                            <span x-text="opt.label"></span>
-                        </button>
+                            class="rounded-md px-3.5 py-1.5 transition-colors"
+                            :class="tripType === opt.value ? 'bg-[var(--card)] text-[var(--brand)] shadow-sm' : 'text-[var(--muted)] hover:text-[var(--fg)]'"
+                            x-text="opt.label"
+                        ></button>
                     </template>
                 </div>
 
@@ -75,15 +79,16 @@
                     type="button"
                     @click="resetForm()"
                     title="Reset search"
-                    class="w-8 h-8 flex items-center justify-center rounded-md bg-[var(--brand)] text-white hover:bg-[var(--brand-dark)] transition-colors"
+                    class="inline-flex items-center gap-1.5 rounded-md border border-[var(--card-border)] px-2.5 py-1.5 text-xs font-medium text-[var(--muted)] hover:bg-[var(--hover-bg)] transition-colors"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M15.312 5.312a5.5 5.5 0 1 0 1.302 5.633.75.75 0 0 1 1.415.49A7 7 0 1 1 16.5 4.11V2.75a.75.75 0 0 1 1.5 0v3a.75.75 0 0 1-.75.75h-3a.75.75 0 0 1 0-1.5h1.06l-.998-1.688Z" clip-rule="evenodd" />
                     </svg>
+                    Reset
                 </button>
             </div>
 
-            <form method="POST" action="{{ route('flights.search.submit') }}">
+            <form method="POST" action="{{ route('flights.search.submit') }}" @submit="submitting = true">
                 @csrf
                 <input type="hidden" name="trip_type" x-model="tripType">
                 <input type="hidden" name="adults" x-model="adults">
@@ -97,7 +102,10 @@
                         <div class="flex flex-col lg:flex-row gap-3 lg:items-stretch">
                             <div class="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-0 border border-[var(--card-border)] rounded-md">
                                 <div class="px-4 py-3.5 border-b-2 border-[var(--brand)] sm:border-b-0 sm:border-r border-[var(--card-border)] rounded-t-md sm:rounded-l-md sm:rounded-tr-none">
-                                    <label :for="'input-' + leg.id + '-from'" class="block text-xs text-[var(--muted)]">Departure Airport</label>
+                                    <label :for="'input-' + leg.id + '-from'" class="flex items-center gap-1 text-xs text-[var(--muted)]">
+                                        <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v6.19L4.99 6.68a.75.75 0 1 0-.98 1.14l5.5 4.75c.28.24.7.24.98 0l5.5-4.75a.75.75 0 1 0-.98-1.14l-4.26 2.26V2.75Z" /><path d="M3.5 15.5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25a.75.75 0 0 1-.75-.75Z" /></svg>
+                                        From
+                                    </label>
                                     <div class="relative" x-on:click.outside="leg.fromOpen = false">
                                         <input
                                             type="text"
@@ -173,7 +181,10 @@
                                 </button>
 
                                 <div class="px-4 py-3.5 rounded-b-md sm:rounded-r-md sm:rounded-bl-none">
-                                    <label :for="'input-' + leg.id + '-to'" class="block text-xs text-[var(--muted)]">Arrival Airport</label>
+                                    <label :for="'input-' + leg.id + '-to'" class="flex items-center gap-1 text-xs text-[var(--muted)]">
+                                        <svg class="w-3 h-3 rotate-180" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v6.19L4.99 6.68a.75.75 0 1 0-.98 1.14l5.5 4.75c.28.24.7.24.98 0l5.5-4.75a.75.75 0 1 0-.98-1.14l-4.26 2.26V2.75Z" /><path d="M3.5 15.5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25a.75.75 0 0 1-.75-.75Z" /></svg>
+                                        To
+                                    </label>
                                     <div class="relative" x-on:click.outside="leg.toOpen = false">
                                         <input
                                             type="text"
@@ -278,7 +289,7 @@
                     </template>
                 </div>
 
-                <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
 
                     <div class="relative border border-[var(--card-border)] border-b-2 border-b-[var(--brand)] rounded-md px-3 py-2" x-on:click.outside="travelerOpen = false">
                         <label class="block text-xs text-[var(--muted)]">Traveler</label>
@@ -409,12 +420,31 @@
                 <div class="mt-6 flex justify-center">
                     <button
                         type="submit"
-                        class="bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white font-semibold rounded-md px-10 py-3 text-sm shadow-sm transition-colors"
+                        :disabled="submitting"
+                        class="inline-flex items-center justify-center gap-2 min-w-[13rem] bg-[var(--brand)] hover:bg-[var(--brand-dark)] disabled:opacity-70 disabled:cursor-wait text-white font-semibold rounded-md px-10 py-3 text-sm shadow-sm transition-colors"
                     >
-                        Search Flight
+                        <svg x-show="submitting" x-cloak class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span x-text="submitting ? 'Searching flights…' : 'Search flights'"></span>
                     </button>
                 </div>
             </form>
+
+            {{-- Full-page POST: this overlay covers the form until the results --}}
+            {{-- page navigates in, so a slow provider call isn't a dead click. --}}
+            <div
+                x-show="submitting"
+                x-cloak
+                class="absolute inset-0 rounded-xl bg-[var(--card)]/70 backdrop-blur-[1px] flex flex-col items-center justify-center gap-3 text-sm text-[var(--muted)]"
+            >
+                <svg class="w-6 h-6 animate-spin text-[var(--brand)]" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Searching live fares — this can take a few seconds.
+            </div>
         </div>
     </main>
 
@@ -468,6 +498,7 @@
                 dropdownFilter: { airline: '' },
                 flexible: false,
                 travelerOpen: false,
+                submitting: false,
 
                 init() {},
 
