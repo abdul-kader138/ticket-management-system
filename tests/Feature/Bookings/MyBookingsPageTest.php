@@ -3,6 +3,7 @@
 namespace Tests\Feature\Bookings;
 
 use App\Filament\Pages\MyBookings;
+use App\Filament\Resources\BookingResource\Pages\ViewBooking;
 use App\Models\Booking;
 use App\Models\FlightProvider;
 use App\Models\TravelerProfile;
@@ -90,6 +91,27 @@ class MyBookingsPageTest extends TestCase
             ->callTableAction('checkPayment', $booking);
 
         $this->assertSame(Booking::STATUS_CONFIRMED, $booking->fresh()->status);
+    }
+
+    public function test_the_staff_booking_view_page_renders_all_sections_without_lazy_loading(): void
+    {
+        // Model::preventLazyLoading is on outside production (AppServiceProvider),
+        // so this render throws if the infolist relations aren't eager-loaded.
+        Permission::findOrCreate('view_any_booking', 'web');
+        Permission::findOrCreate('view_booking', 'web');
+        $staff = User::factory()->create();
+        $staff->givePermissionTo(['view_any_booking', 'view_booking']);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $customer = User::factory()->create();
+        $booking = $this->heldBookingFor($customer);
+        $payment = app(PaymentService::class)->initiate($booking, 'fake')['payment'];
+        app(PaymentService::class)->reconcile($payment); // pending -> nothing, but creates a payment row
+
+        Livewire::actingAs($staff)
+            ->test(ViewBooking::class, ['record' => $booking->id])
+            ->assertOk()
+            ->assertSee($booking->currency);
     }
 
     public function test_the_page_is_hidden_from_the_nav_for_staff_with_the_bookings_permission(): void

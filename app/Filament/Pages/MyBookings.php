@@ -57,12 +57,14 @@ class MyBookings extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            // Only `segments` is read by the columns on every row; passengers
-            // and payments are used solely inside the View modal, so they
-            // lazy-load on open rather than joining for the whole list.
+            // `segments` drives the list columns; `passengers`/`payments`
+            // are read by the View modal's infolist. All three are batch
+            // (WHERE booking_id IN …) loads, not per-row — and a customer
+            // has few bookings — so eager-load them up front (lazy loading
+            // is blocked outside production, see AppServiceProvider).
             ->query(fn (): Builder => Booking::query()
                 ->where('user_id', auth()->id())
-                ->with('segments'))
+                ->with(['segments', 'passengers', 'payments']))
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('id')->label('Ref')->prefix('#')->sortable(),

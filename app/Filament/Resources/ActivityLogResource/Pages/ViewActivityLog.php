@@ -8,11 +8,18 @@ use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Models\Activity;
 
 class ViewActivityLog extends ViewRecord
 {
     protected static string $resource = ActivityLogResource::class;
+
+    // 'causer.name' in the infolist would otherwise lazy-load the causer.
+    protected function resolveRecord(int|string $key): Model
+    {
+        return parent::resolveRecord($key)->load('causer');
+    }
 
     protected function getHeaderActions(): array
     {

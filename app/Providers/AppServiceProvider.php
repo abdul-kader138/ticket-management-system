@@ -13,6 +13,7 @@ use App\Policies\ActivityPolicy;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse as LoginResponseContract;
 use Filament\Http\Responses\Auth\Contracts\RegistrationResponse as RegistrationResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -39,6 +40,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Surface N+1s as exceptions everywhere except production, where it
+        // stays a silent no-op so a missed eager-load only degrades
+        // performance rather than 500-ing a customer. Not the full
+        // shouldBeStrict() — preventAccessingMissingAttributes breaks the
+        // column-narrowed selects the dashboard widgets/export service use.
+        Model::preventLazyLoading(! $this->app->isProduction());
+
         $this->applyMailSettings();
         $this->applyGoogleOAuthSettings();
 

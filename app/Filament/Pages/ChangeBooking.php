@@ -166,11 +166,14 @@ class ChangeBooking extends Page implements HasForms
             ->all();
     }
 
-    /** #[Computed] so repeated $this->booking reads collapse to a single query per request. */
+    /**
+     * #[Computed] so repeated $this->booking reads collapse to a single
+     * query per request. `segments` is eager-loaded for the summary panel.
+     */
     #[Computed]
     public function booking(): ?Booking
     {
-        return $this->bookingId ? Booking::find($this->bookingId) : null;
+        return $this->bookingId ? Booking::with('segments')->find($this->bookingId) : null;
     }
 
     public function searchChangeOffers(): void

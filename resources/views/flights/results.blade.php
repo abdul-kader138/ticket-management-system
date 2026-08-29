@@ -228,10 +228,15 @@
             </div>
         @endif
 
-        <details class="mt-8 bg-[var(--card)] rounded-xl border border-[var(--card-border)] p-4">
-            <summary class="text-sm text-[var(--muted)] cursor-pointer select-none">Raw provider response (debug)</summary>
-            <pre class="mt-3 text-xs text-[var(--muted)] overflow-x-auto whitespace-pre-wrap">{{ json_encode($offers, JSON_PRETTY_PRINT) }}</pre>
-        </details>
+        {{-- Debug only: the raw provider payload is large (tens of KB to --}}
+        {{-- MBs across a full result set) — never ship it in the response --}}
+        {{-- on a production page. --}}
+        @if(config('app.debug'))
+            <details class="mt-8 bg-[var(--card)] rounded-xl border border-[var(--card-border)] p-4">
+                <summary class="text-sm text-[var(--muted)] cursor-pointer select-none">Raw provider response (debug)</summary>
+                <pre class="mt-3 text-xs text-[var(--muted)] overflow-x-auto whitespace-pre-wrap">{{ json_encode($offers, JSON_PRETTY_PRINT) }}</pre>
+            </details>
+        @endif
     </main>
 
 </body>

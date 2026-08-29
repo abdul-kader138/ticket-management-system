@@ -18,10 +18,18 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class ViewBooking extends ViewRecord
 {
     protected static string $resource = BookingResource::class;
+
+    // Eager-load everything the infolist renders — otherwise each
+    // RepeatableEntry / nested TextEntry lazy-loads its relation on access.
+    protected function resolveRecord(int|string $key): Model
+    {
+        return parent::resolveRecord($key)->load(['user', 'flightProvider', 'segments', 'passengers', 'payments']);
+    }
 
     protected function getHeaderActions(): array
     {

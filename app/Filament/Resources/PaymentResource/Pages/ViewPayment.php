@@ -9,10 +9,18 @@ use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class ViewPayment extends ViewRecord
 {
     protected static string $resource = PaymentResource::class;
+
+    // The infolist reads user.name and the refunds collection (also in a
+    // visible() closure) — eager-load both so neither lazy-loads.
+    protected function resolveRecord(int|string $key): Model
+    {
+        return parent::resolveRecord($key)->load(['user', 'refunds']);
+    }
 
     protected function getHeaderActions(): array
     {

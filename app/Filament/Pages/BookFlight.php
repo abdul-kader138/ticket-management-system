@@ -345,11 +345,15 @@ class BookFlight extends Page implements HasForms
             ->send();
     }
 
-    /** #[Computed] so the blade's repeated $this->booking reads are one query, not four. */
+    /**
+     * #[Computed] so the blade's repeated $this->booking reads are one
+     * query, not four. `segments` is eager-loaded because the payment step
+     * renders the itinerary from it.
+     */
     #[Computed]
     public function booking(): ?Booking
     {
-        return $this->bookingId ? Booking::find($this->bookingId) : null;
+        return $this->bookingId ? Booking::with('segments')->find($this->bookingId) : null;
     }
 
     public function startPayment(string $gateway): void
