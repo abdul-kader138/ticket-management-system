@@ -121,7 +121,12 @@ class UserResource extends Resource
                         // pivot ->sync() so RoleAttached/RoleDetached fire and
                         // the change lands in the audit log (see
                         // App\Listeners\LogPermissionActivity).
-                        ->saveRelationshipsUsing(fn ($record, $state) => $record->syncRoles($state)),
+                        // $state is an array of role IDs as strings (all form
+                        // state round-trips through HTTP as strings), and
+                        // syncRoles() treats a numeric string as a role *name*
+                        // lookup rather than an ID lookup — resolve to Role
+                        // models first so it doesn't misinterpret them.
+                        ->saveRelationshipsUsing(fn ($record, $state) => $record->syncRoles(Role::findMany($state))),
                 ]),
         ]);
     }

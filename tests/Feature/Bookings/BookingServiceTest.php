@@ -4,6 +4,7 @@ namespace Tests\Feature\Bookings;
 
 use App\Models\Booking;
 use App\Models\FlightProvider;
+use App\Models\Setting;
 use App\Models\TravelerProfile;
 use App\Models\User;
 use App\Services\Bookings\BookingException;
@@ -88,6 +89,35 @@ class BookingServiceTest extends TestCase
             'booking_id' => $booking->id,
             'event_type' => Booking::STATUS_HELD,
         ]);
+    }
+
+    public function test_hold_expiry_uses_the_configured_setting_when_the_offer_has_no_expiry(): void
+    {
+        Setting::set('booking_hold_expiry_hours', 6, 'payments');
+        FakeFlightProvider::$offerDetail = ['id' => 'off_1', 'total_amount' => '10.00', 'total_currency' => 'USD', 'slices' => []];
+
+        $traveler = $this->traveler();
+        $booking = app(BookingService::class)->createHold(
+            $this->user, 'fake', 'off_1', [['traveler_profile_id' => $traveler->id, 'type' => 'adult']]
+        );
+
+        $this->assertEqualsWithDelta(now()->addHours(6)->timestamp, $booking->expires_at->timestamp, 5);
+    }
+
+    public function test_hold_expiry_is_capped_at_the_providers_own_quote_expiry_when_sooner(): void
+    {
+        Setting::set('booking_hold_expiry_hours', 12, 'payments');
+        FakeFlightProvider::$offerDetail = [
+            'id' => 'off_1', 'total_amount' => '10.00', 'total_currency' => 'USD', 'slices' => [],
+            'expires_at' => now()->addMinutes(25)->toIso8601String(),
+        ];
+
+        $traveler = $this->traveler();
+        $booking = app(BookingService::class)->createHold(
+            $this->user, 'fake', 'off_1', [['traveler_profile_id' => $traveler->id, 'type' => 'adult']]
+        );
+
+        $this->assertEqualsWithDelta(now()->addMinutes(25)->timestamp, $booking->expires_at->timestamp, 5);
     }
 
     public function test_rejects_a_traveler_profile_that_belongs_to_someone_else(): void

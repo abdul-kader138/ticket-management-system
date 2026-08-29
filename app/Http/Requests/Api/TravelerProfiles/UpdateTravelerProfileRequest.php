@@ -21,12 +21,12 @@ class UpdateTravelerProfileRequest extends FormRequest
             'gender' => ['sometimes', 'nullable', 'string', 'in:m,f,x'],
             'first_name' => ['sometimes', 'required', 'string', 'max:255'],
             'last_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'date_of_birth' => ['sometimes', 'required', 'date', 'before:today'],
+            'date_of_birth' => ['sometimes', 'required', 'date', 'after_or_equal:1900-01-01', 'before:today'],
             'nationality' => ['sometimes', 'nullable', 'string', 'size:2'],
             'email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
-            'passport_number' => ['sometimes', 'nullable', 'string', 'max:50'],
-            'passport_expiry' => ['sometimes', 'nullable', 'date', 'after:today'],
+            'passport_number' => ['sometimes', 'required', 'string', 'max:50'],
+            'passport_expiry' => ['sometimes', 'required', 'date', 'after:today', 'before_or_equal:'.now()->addYears(20)->toDateString()],
         ];
     }
 }

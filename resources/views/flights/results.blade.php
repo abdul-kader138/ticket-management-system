@@ -210,11 +210,17 @@
                                     @endif
                                 </div>
 
-                                <button type="button" disabled
-                                        title="Booking checkout isn't part of this admin test screen — see POST /api/v1/bookings"
-                                        class="w-full lg:w-auto bg-[var(--card-border)] text-[var(--muted)] cursor-not-allowed rounded-md px-5 py-2 text-sm font-semibold">
+                                @php
+                                    $bookUrl = \App\Filament\Pages\BookFlight::getUrl([
+                                        'provider' => data_get($offer, 'provider_code', 'duffel'),
+                                        'offer' => data_get($offer, 'provider_offer_id', data_get($offer, 'id')),
+                                    ]);
+                                @endphp
+                                <a href="{{ $bookUrl }}" target="_top"
+                                   class="inline-flex w-full lg:w-auto items-center justify-center gap-1.5 bg-[var(--brand)] text-white hover:opacity-90 transition-opacity rounded-md px-5 py-2 text-sm font-semibold">
                                     Select
-                                </button>
+                                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" /></svg>
+                                </a>
                             </div>
                         </div>
                     </div>

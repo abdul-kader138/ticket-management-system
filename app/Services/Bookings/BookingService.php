@@ -20,9 +20,10 @@ use Illuminate\Support\Facades\DB;
  */
 class BookingService
 {
-    // A hold this long by default when the provider's own offer doesn't
-    // say otherwise — Duffel offers normally carry their own expires_at.
-    private const DEFAULT_HOLD_MINUTES = 30;
+    // Fallback hold length (hours) when the `booking_hold_expiry_hours`
+    // System Setting is missing — normally an admin controls this in
+    // System Settings → Payments → Booking Holds.
+    private const DEFAULT_HOLD_HOURS = 12;
 
     public function __construct(private readonly FlightProviderManager $providers) {}
 
@@ -206,13 +207,24 @@ class BookingService
     }
 
     /**
+     * How long the hold is good for: the admin-configured window
+     * (`booking_hold_expiry_hours`), capped at the provider's own fare-quote
+     * expiry when it's sooner — paying after the quote lapses would fail at
+     * order time. App\Console\Commands\ExpireStaleBookingHolds sweeps holds
+     * past this every minute.
+     *
      * @param  array<string, mixed>  $offer
      */
     private function resolveExpiry(array $offer): Carbon
     {
-        $expiresAt = $offer['expires_at'] ?? null;
+        $hours = (int) Setting::get('booking_hold_expiry_hours', self::DEFAULT_HOLD_HOURS);
+        $configuredExpiry = now()->addHours(max(1, $hours));
 
-        return $expiresAt ? Carbon::parse($expiresAt) : now()->addMinutes(self::DEFAULT_HOLD_MINUTES);
+        $providerExpiry = isset($offer['expires_at']) ? Carbon::parse($offer['expires_at']) : null;
+
+        return $providerExpiry && $providerExpiry->lt($configuredExpiry)
+            ? $providerExpiry
+            : $configuredExpiry;
     }
 
     private function toCents(string $amount): int

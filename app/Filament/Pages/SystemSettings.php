@@ -111,6 +111,7 @@ class SystemSettings extends Page implements HasForms
             'paypal_client_id' => Setting::get('paypal_client_id', ''),
             'paypal_client_secret' => Setting::get('paypal_client_secret', ''),
             'paypal_webhook_id' => Setting::get('paypal_webhook_id', ''),
+            'booking_hold_expiry_hours' => Setting::get('booking_hold_expiry_hours', 12),
 
             // Compliance
             'current_terms_version' => Setting::get('current_terms_version', 'v1'),
@@ -475,6 +476,19 @@ class SystemSettings extends Page implements HasForms
                                         ->content(fn () => route('webhooks.payments', ['gateway' => 'paypal']))
                                         ->helperText('Subscribe it to PAYMENT.CAPTURE.COMPLETED, PAYMENT.CAPTURE.DENIED and PAYMENT.CAPTURE.REFUNDED.'),
                                 ]),
+
+                            Section::make('Booking Holds')
+                                ->description('When a customer holds a fare but doesn\'t pay, the hold is released automatically after this window — or when the airline\'s fare quote expires, whichever comes first. The sweep runs every minute (bookings:expire-holds).')
+                                ->schema([
+                                    TextInput::make('booking_hold_expiry_hours')
+                                        ->label('Hold expiry (hours)')
+                                        ->numeric()
+                                        ->minValue(1)
+                                        ->maxValue(720)
+                                        ->default(12)
+                                        ->required()
+                                        ->helperText('A held booking with no confirmed payment is moved to "expired" after this many hours. Example: 12.'),
+                                ]),
                         ]),
 
                     // ── Compliance ───────────────────────────────────────────
@@ -542,6 +556,7 @@ class SystemSettings extends Page implements HasForms
             'paypal_client_id' => 'payments',
             'paypal_client_secret' => 'payments',
             'paypal_webhook_id' => 'payments',
+            'booking_hold_expiry_hours' => 'payments',
             'current_terms_version' => 'compliance',
             'refund_policy_text' => 'compliance',
             'data_retention_days' => 'compliance',

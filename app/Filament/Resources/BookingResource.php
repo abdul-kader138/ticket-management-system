@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Pages\BookFlight;
+use App\Filament\Pages\ChangeBooking;
 use App\Filament\Resources\BookingResource\Pages;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -94,6 +96,58 @@ class BookingResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+
+                Action::make('takePayment')
+                    ->label('Take payment')
+                    ->icon('heroicon-o-credit-card')
+                    ->color('primary')
+                    ->visible(fn (Booking $record) => $record->status === Booking::STATUS_HELD && ! $record->hasExpired())
+                    ->url(fn (Booking $record) => BookFlight::getUrl(['booking' => $record->id])),
+
+                // Recovery path for a booking stranded in 'pending_payment'
+                // because its gateway webhook never arrived — polls the
+                // gateway directly (same call as the nightly reconcile
+                // sweep) instead of waiting for it.
+                Action::make('checkPayment')
+                    ->label('Check payment')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->visible(fn (Booking $record) => $record->status === Booking::STATUS_PENDING_PAYMENT)
+                    ->action(function (Booking $record) {
+                        $payment = $record->payments()
+                            ->where('status', Payment::STATUS_PENDING)
+                            ->latest()
+                            ->first();
+
+                        if (! $payment) {
+                            Notification::make()->warning()->title('No pending payment to check.')->send();
+
+                            return;
+                        }
+
+                        try {
+                            app(PaymentService::class)->reconcile($payment);
+                        } catch (\Throwable $e) {
+                            Notification::make()->danger()->title('Could not check payment')->body($e->getMessage())->send();
+
+                            return;
+                        }
+
+                        $status = $record->fresh()->status;
+
+                        Notification::make()
+                            ->status($status === Booking::STATUS_CONFIRMED ? 'success' : 'info')
+                            ->title('Booking is now: '.ucfirst(str_replace('_', ' ', $status)))
+                            ->send();
+                    }),
+
+                Action::make('change')
+                    ->label('Change')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->visible(fn (Booking $record) => auth()->user()->can('update_booking')
+                        && in_array($record->status, [Booking::STATUS_CONFIRMED, Booking::STATUS_CHANGED], true))
+                    ->url(fn (Booking $record) => ChangeBooking::getUrl(['booking' => $record->id])),
 
                 Action::make('forceCancel')
                     ->label('Cancel')

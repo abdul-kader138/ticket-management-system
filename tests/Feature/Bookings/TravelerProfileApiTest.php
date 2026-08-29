@@ -26,6 +26,7 @@ class TravelerProfileApiTest extends TestCase
             'last_name' => 'Lovelace',
             'date_of_birth' => '1990-01-01',
             'passport_number' => 'X1234567',
+            'passport_expiry' => now()->addYears(5)->toDateString(),
         ])->assertCreated()->assertJsonPath('first_name', 'Ada');
 
         $response = $this->actingAs($user, 'web')->getJson('/api/v1/traveler-profiles')->assertOk();
@@ -34,6 +35,27 @@ class TravelerProfileApiTest extends TestCase
         // Passport number is write-only — never echoed back.
         $this->assertArrayNotHasKey('passport_number', $response->json()[0]);
         $this->assertTrue($response->json()[0]['has_passport']);
+    }
+
+    public function test_passport_number_and_expiry_are_required_and_expiry_must_be_in_the_future(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'web')->postJson('/api/v1/traveler-profiles', [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'date_of_birth' => '1990-01-01',
+        ])->assertStatus(422)->assertJsonValidationErrors(['passport_number', 'passport_expiry']);
+
+        $this->actingAs($user, 'web')->postJson('/api/v1/traveler-profiles', [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'date_of_birth' => '1990-01-01',
+            'passport_number' => 'X1234567',
+            'passport_expiry' => now()->subDay()->toDateString(),
+        ])->assertStatus(422)->assertJsonValidationErrors(['passport_expiry']);
+
+        $this->assertDatabaseCount('traveler_profiles', 0);
     }
 
     public function test_a_user_cannot_update_someone_elses_traveler(): void

@@ -59,4 +59,16 @@ class SystemSettingsPageTest extends TestCase
         $this->assertSame('no-reply@acmesupport.test', Setting::get('mail_from_address'));
         $this->assertSame('staff@acmesupport.test', Setting::get('staff_notification_email'));
     }
+
+    public function test_booking_hold_expiry_hours_round_trips_and_drives_the_hold_window(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        Livewire::test(SystemSettings::class)
+            ->fillForm(['booking_hold_expiry_hours' => 8])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(8, (int) Setting::get('booking_hold_expiry_hours'));
+    }
 }
