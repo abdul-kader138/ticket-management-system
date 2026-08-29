@@ -6,6 +6,7 @@ use App\Models\Payment;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PaymentService;
 use Filament\Notifications\Notification;
+use Livewire\Attributes\Computed;
 
 /**
  * The payment leg shared by BookFlight (original purchase) and
@@ -30,8 +31,14 @@ trait HandlesPaymentStep
 
     abstract protected function onPaymentSettled(Payment $payment): void;
 
-    /** @return array<string, string> Configured gateways only. */
-    public function getAvailableGatewaysProperty(): array
+    /**
+     * Configured gateways only. #[Computed] so the several reads from the
+     * payment-panel blade resolve the Setting lookups once per request.
+     *
+     * @return array<string, string>
+     */
+    #[Computed]
+    public function availableGateways(): array
     {
         $manager = app(PaymentGatewayManager::class);
         $out = [];

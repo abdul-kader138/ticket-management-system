@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\Refund;
 use App\Models\UserSubscription;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
@@ -73,7 +74,11 @@ class MyPayments extends Page implements HasTable
                 TextColumn::make('refunded')
                     ->label('Refunded')
                     ->getStateUsing(function (Payment $record) {
-                        $cents = $record->totalRefundedCents();
+                        // Sum the already-eager-loaded refunds collection —
+                        // Payment::totalRefundedCents() would fire a query per row.
+                        $cents = (int) $record->refunds
+                            ->where('status', Refund::STATUS_SUCCEEDED)
+                            ->sum('amount_cents');
 
                         return $cents > 0 ? "{$record->currency} ".number_format($cents / 100, 2) : '—';
                     }),

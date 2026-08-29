@@ -20,6 +20,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Livewire\Attributes\Computed;
 
 /**
  * Post-purchase servicing for a confirmed booking — the "change" half of
@@ -165,7 +166,9 @@ class ChangeBooking extends Page implements HasForms
             ->all();
     }
 
-    public function getBookingProperty(): ?Booking
+    /** #[Computed] so repeated $this->booking reads collapse to a single query per request. */
+    #[Computed]
+    public function booking(): ?Booking
     {
         return $this->bookingId ? Booking::find($this->bookingId) : null;
     }

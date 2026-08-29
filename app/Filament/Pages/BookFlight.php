@@ -27,6 +27,7 @@ use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
 
 /**
  * The other half of the flight-search screen: takes an offer the user
@@ -141,11 +142,25 @@ class BookFlight extends Page implements HasForms
                 Select::make('customer_id')
                     ->label('Customer account')
                     ->helperText('The booking is created under this account; travelers below must belong to it.')
-                    ->options(fn () => User::query()
-                        ->orderBy('first_name')
-                        ->get()
-                        ->mapWithKeys(fn (User $u) => [$u->id => "{$u->name} — {$u->email}"]))
+                    // Searched server-side rather than loading every user into
+                    // the option list — that does not scale past a few
+                    // thousand accounts.
                     ->searchable()
+                    ->getSearchResultsUsing(fn (string $search) => User::query()
+                        ->where(fn ($q) => $q
+                            ->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%"))
+                        ->orderBy('first_name')
+                        ->limit(50)
+                        ->get()
+                        ->mapWithKeys(fn (User $u) => [$u->id => "{$u->name} — {$u->email}"])
+                        ->all())
+                    ->getOptionLabelUsing(function ($value): ?string {
+                        $user = User::find($value);
+
+                        return $user ? "{$user->name} — {$user->email}" : null;
+                    })
                     ->required()
                     ->live()
                     ->afterStateUpdated(fn (Set $set) => $set('passengers', [['traveler_profile_id' => null, 'type' => 'adult']])),
@@ -229,7 +244,8 @@ class BookFlight extends Page implements HasForms
      *
      * @return array<string, int>
      */
-    public function getRequiredPassengersProperty(): array
+    #[Computed]
+    public function requiredPassengers(): array
     {
         return collect(data_get($this->offer, 'passengers', []))
             ->map(fn ($p) => match (data_get($p, 'type')) {
@@ -329,7 +345,9 @@ class BookFlight extends Page implements HasForms
             ->send();
     }
 
-    public function getBookingProperty(): ?Booking
+    /** #[Computed] so the blade's repeated $this->booking reads are one query, not four. */
+    #[Computed]
+    public function booking(): ?Booking
     {
         return $this->bookingId ? Booking::find($this->bookingId) : null;
     }

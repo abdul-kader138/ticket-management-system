@@ -57,9 +57,12 @@ class MyBookings extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
+            // Only `segments` is read by the columns on every row; passengers
+            // and payments are used solely inside the View modal, so they
+            // lazy-load on open rather than joining for the whole list.
             ->query(fn (): Builder => Booking::query()
                 ->where('user_id', auth()->id())
-                ->with(['segments', 'flightProvider', 'payments.refunds']))
+                ->with('segments'))
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('id')->label('Ref')->prefix('#')->sortable(),
@@ -73,7 +76,7 @@ class MyBookings extends Page implements HasTable
                         return $from && $to ? "{$from} → {$to}" : '—';
                     }),
 
-                TextColumn::make('segments.departs_at')
+                TextColumn::make('departs')
                     ->label('Departs')
                     ->getStateUsing(fn (Booking $record) => $record->segments->first()?->departs_at?->format('d/m/Y H:i') ?? '—'),
 
