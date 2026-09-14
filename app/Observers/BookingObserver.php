@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Booking;
 use App\Models\Setting;
 use App\Models\User;
+use App\Notifications\BookingConfirmed;
 use App\Services\Flights\SearchQuotaService;
 
 /**
@@ -30,6 +31,8 @@ class BookingObserver
 
         $user = $booking->user;
         $user->increment('total_spend_cents', $booking->total_price_cents);
+
+        $user->notify(new BookingConfirmed($booking));
 
         $this->maybeRewardReferrer($user);
     }

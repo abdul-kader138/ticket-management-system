@@ -4,6 +4,7 @@ namespace App\Services\Bookings;
 
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Notifications\BookingCancelled;
 use App\Services\Flights\FlightProviderManager;
 use App\Services\Payments\PaymentService;
 
@@ -37,6 +38,7 @@ class CancellationService
         // Nothing was ever paid — no provider order exists yet either.
         if ($booking->status === Booking::STATUS_HELD) {
             $booking->transitionTo(Booking::STATUS_CANCELLED, $actorType, $actorId, ['reason' => $reason]);
+            $booking->user->notify(new BookingCancelled($booking, $reason));
 
             return;
         }
@@ -66,5 +68,11 @@ class CancellationService
         if ($booking->fresh()->status !== Booking::STATUS_REFUNDED) {
             $booking->transitionTo(Booking::STATUS_CANCELLED, $actorType, $actorId, ['reason' => $reason]);
         }
+
+        // Sent regardless of whether the refund above already moved the
+        // booking to 'refunded' — the customer still needs to know the
+        // booking itself is cancelled, separately from the refund receipt
+        // PaymentService::recordRefund() sends.
+        $booking->user->notify(new BookingCancelled($booking, $reason));
     }
 }

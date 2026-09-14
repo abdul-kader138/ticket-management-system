@@ -2,10 +2,12 @@
 
 namespace App\Services\Subscriptions;
 
+use App\Models\Setting;
 use App\Models\SubscriptionPlan;
 use App\Models\SubscriptionTierRule;
 use App\Models\User;
 use App\Models\UserSubscription;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -45,21 +47,7 @@ class SubscriptionService
     public function createPendingSubscription(User $user, SubscriptionPlan $plan): UserSubscription
     {
         return DB::transaction(function () use ($user, $plan) {
-            // Locks the user row so two concurrent purchase attempts (double
-            // click, retried request) serialize instead of both passing the
-            // "no open subscription" check and creating duplicate pending
-            // rows / duplicate charges.
-            User::query()->whereKey($user->id)->lockForUpdate()->first();
-
-            $hasOpenSubscription = UserSubscription::query()
-                ->where('user_id', $user->id)
-                ->whereIn('status', [UserSubscription::STATUS_PENDING_PAYMENT, UserSubscription::STATUS_ACTIVE])
-                ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
-                ->exists();
-
-            if ($hasOpenSubscription) {
-                throw new SubscriptionException('You already have a subscription in progress or active.');
-            }
+            $this->lockAgainstDuplicateSubscription($user);
 
             return UserSubscription::create([
                 'user_id' => $user->id,
@@ -73,20 +61,122 @@ class SubscriptionService
     }
 
     /**
+     * Admin-granted subscription (e.g. a support comp, or migrating a
+     * legacy customer) — skips payment entirely and activates immediately,
+     * unlike createPendingSubscription()/activate() which only run once a
+     * real charge has succeeded. Shares the same duplicate-subscription
+     * guard so a comped plan can't stack with a paid one either.
+     *
+     * @throws SubscriptionException
+     */
+    public function grantComplimentary(User $user, SubscriptionPlan $plan): UserSubscription
+    {
+        return DB::transaction(function () use ($user, $plan) {
+            $this->lockAgainstDuplicateSubscription($user);
+
+            $subscription = UserSubscription::create([
+                'user_id' => $user->id,
+                'subscription_plan_id' => $plan->id,
+                'source' => 'comped',
+                'status' => UserSubscription::STATUS_ACTIVE,
+                'starts_at' => now(),
+                'ends_at' => $this->resolveEndsAt($plan),
+                'auto_renew' => false,
+            ]);
+
+            $this->forgetActivePlanCache($user->id);
+
+            return $subscription;
+        });
+    }
+
+    /**
+     * Auto-granted right after a customer registers — see
+     * RegisteredUserController::store(). Which plan (if any) is configured
+     * via the "New Customer Default" System Setting
+     * (signup_default_plan_id); unset means new customers get no plan and
+     * simply fall back to the site-wide search-quota default, same as
+     * today. Silently does nothing on any SubscriptionException (e.g. a
+     * plan misconfiguration) — a signup default is a nice-to-have, not
+     * something that should ever fail account creation.
+     *
+     * Unlike a purchased or admin-comped subscription, this one never
+     * expires (ends_at stays null): it isn't a billing cycle, just the
+     * account's permanent baseline until they subscribe to something real,
+     * so it shouldn't quietly lapse via ExpireSubscriptions and drop them
+     * below the site default the moment a month/year passes.
+     */
+    public function grantSignupDefault(User $user): void
+    {
+        $planId = Setting::get('signup_default_plan_id');
+
+        if (blank($planId)) {
+            return;
+        }
+
+        $plan = SubscriptionPlan::query()->active()->find($planId);
+
+        if (! $plan) {
+            return;
+        }
+
+        try {
+            DB::transaction(function () use ($user, $plan) {
+                $this->lockAgainstDuplicateSubscription($user);
+
+                UserSubscription::create([
+                    'user_id' => $user->id,
+                    'subscription_plan_id' => $plan->id,
+                    'source' => 'signup_default',
+                    'status' => UserSubscription::STATUS_ACTIVE,
+                    'starts_at' => now(),
+                    'ends_at' => null,
+                    'auto_renew' => false,
+                ]);
+            });
+
+            $this->forgetActivePlanCache($user->id);
+        } catch (SubscriptionException) {
+            // A brand-new account should never already have one — nothing
+            // to do if it somehow does.
+        }
+    }
+
+    /**
+     * Locks the user row so two concurrent create attempts (double click,
+     * retried request, an admin comp racing a customer's own purchase)
+     * serialize instead of both passing the "no open subscription" check
+     * and creating duplicate rows — must be called inside a transaction.
+     *
+     * @throws SubscriptionException
+     */
+    private function lockAgainstDuplicateSubscription(User $user): void
+    {
+        User::query()->whereKey($user->id)->lockForUpdate()->first();
+
+        if ($this->hasOpenSubscription($user)) {
+            throw new SubscriptionException('You already have a subscription in progress or active.');
+        }
+    }
+
+    /**
      * Called only once the subscription's payment has actually succeeded
      * (see PaymentService::markSucceeded()).
      */
     public function activate(UserSubscription $subscription): void
     {
-        $plan = $subscription->subscriptionPlan;
-
         $subscription->update([
             'status' => UserSubscription::STATUS_ACTIVE,
             'starts_at' => now(),
-            'ends_at' => $plan->billing_interval === 'year' ? now()->addYear() : now()->addMonth(),
+            'ends_at' => $this->resolveEndsAt($subscription->subscriptionPlan),
         ]);
 
         $this->forgetActivePlanCache($subscription->user_id);
+    }
+
+    private function resolveEndsAt(SubscriptionPlan $plan): Carbon
+    {
+        return $plan->billing_interval === 'year' ? now()->addYear() : now()->addMonth();
     }
 
     public function markFailed(UserSubscription $subscription): void
@@ -123,6 +213,20 @@ class SubscriptionService
     private function forgetActivePlanCache(int $userId): void
     {
         unset($this->activePlanCache[$userId]);
+    }
+
+    /**
+     * Read-only version of the check lockAgainstDuplicateSubscription()
+     * enforces — for callers (e.g. an admin action's visible() closure)
+     * that only need to know the answer, not to hold it under a lock.
+     */
+    public function hasOpenSubscription(User $user): bool
+    {
+        return UserSubscription::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', [UserSubscription::STATUS_PENDING_PAYMENT, UserSubscription::STATUS_ACTIVE])
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
+            ->exists();
     }
 
     /**

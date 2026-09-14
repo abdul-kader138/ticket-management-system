@@ -5,6 +5,7 @@ namespace App\Services\Bookings;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\User;
+use App\Notifications\BookingChangeConfirmed;
 use App\Services\Flights\DTO\OfferCollection;
 use App\Services\Flights\DTO\SearchCriteria;
 use App\Services\Flights\FlightProviderManager;
@@ -63,6 +64,12 @@ class BookingChangeService
             'change_offer_id' => $changeOfferId,
             'difference_cents' => $differenceCents,
         ]);
+
+        // The itinerary is already changed at this point regardless of the
+        // branch below — a costlier change still owes a separate charge,
+        // but the change itself isn't conditional on that charge
+        // succeeding (see chargeAdditional()'s docblock).
+        $booking->user->notify(new BookingChangeConfirmed($booking, $differenceCents));
 
         if ($differenceCents <= 0) {
             return ['payment' => null, 'client_data' => []];

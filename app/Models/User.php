@@ -156,6 +156,11 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         return $this->hasMany(Payment::class);
     }
 
+    public function promotionRedemptions(): HasMany
+    {
+        return $this->hasMany(PromotionRedemption::class);
+    }
+
     public function referrer(): BelongsTo
     {
         return $this->belongsTo(self::class, 'referrer_id');

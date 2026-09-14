@@ -65,6 +65,38 @@ class TwoFactorController extends Controller
         ]);
     }
 
+    /**
+     * Password-gated like destroy() below — recovery codes are the
+     * account-recovery path of last resort, so regenerating them (which
+     * invalidates every existing one immediately) needs the same proof of
+     * intent as turning 2FA off entirely, not just an active session.
+     */
+    public function regenerateRecoveryCodes(Request $request, TwoFactorAuthenticationService $service): JsonResponse
+    {
+        $data = $request->validate(['password' => ['required', 'string']]);
+
+        $user = $request->user();
+
+        if (! $user->password || ! Hash::check($data['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['The password is incorrect.'],
+            ]);
+        }
+
+        if (! $user->hasEnabledTwoFactorAuthentication()) {
+            return response()->json(['message' => 'Two-factor authentication is not enabled.'], 422);
+        }
+
+        $recoveryCodes = $service->generateRecoveryCodes();
+
+        $user->forceFill(['two_factor_recovery_codes' => $recoveryCodes])->save();
+
+        return response()->json([
+            'message' => 'Recovery codes regenerated.',
+            'recovery_codes' => $recoveryCodes,
+        ]);
+    }
+
     public function destroy(Request $request): JsonResponse
     {
         $data = $request->validate(['password' => ['required', 'string']]);

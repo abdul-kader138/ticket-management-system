@@ -6,8 +6,10 @@ use App\Models\Booking;
 use App\Models\FlightProvider;
 use App\Models\TravelerProfile;
 use App\Models\User;
+use App\Notifications\BookingExpired;
 use App\Services\Bookings\BookingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\Feature\Flights\FakeFlightProvider;
 use Tests\TestCase;
 
@@ -17,6 +19,7 @@ class ExpireStaleBookingHoldsCommandTest extends TestCase
 
     public function test_the_command_expires_past_due_holds(): void
     {
+        Notification::fake();
         FakeFlightProvider::reset();
         FakeFlightProvider::$offerDetail = ['id' => 'off_1', 'total_amount' => '10.00', 'total_currency' => 'USD', 'slices' => []];
 
@@ -38,5 +41,6 @@ class ExpireStaleBookingHoldsCommandTest extends TestCase
         $this->artisan('bookings:expire-holds')->assertSuccessful();
 
         $this->assertSame(Booking::STATUS_EXPIRED, $booking->fresh()->status);
+        Notification::assertSentTo($user, BookingExpired::class);
     }
 }

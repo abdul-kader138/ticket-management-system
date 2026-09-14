@@ -7,12 +7,16 @@ use App\Models\FlightProvider;
 use App\Models\Payment;
 use App\Models\TravelerProfile;
 use App\Models\User;
+use App\Notifications\BookingConfirmed;
+use App\Notifications\PaymentFailed;
+use App\Notifications\RefundIssued;
 use App\Services\Bookings\BookingService;
 use App\Services\Payments\DTO\WebhookOutcome;
 use App\Services\Payments\PaymentException;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\Feature\Flights\FakeFlightProvider;
 use Tests\TestCase;
 
@@ -91,6 +95,7 @@ class PaymentServiceTest extends TestCase
 
     public function test_a_succeeded_webhook_outcome_confirms_the_booking_and_issues_a_provider_order(): void
     {
+        Notification::fake();
         $booking = $this->heldBooking();
         $payment = app(PaymentService::class)->initiate($booking, 'fake')['payment'];
 
@@ -102,6 +107,7 @@ class PaymentServiceTest extends TestCase
         $this->assertSame(Payment::STATUS_SUCCEEDED, $payment->fresh()->status);
         $this->assertSame(Booking::STATUS_CONFIRMED, $booking->fresh()->status);
         $this->assertNotNull($booking->fresh()->provider_order_id);
+        Notification::assertSentTo($this->user, BookingConfirmed::class);
     }
 
     public function test_a_duplicate_succeeded_webhook_is_a_no_op(): void
@@ -119,6 +125,7 @@ class PaymentServiceTest extends TestCase
 
     public function test_a_failed_webhook_outcome_returns_the_booking_to_held(): void
     {
+        Notification::fake();
         $booking = $this->heldBooking();
         $payment = app(PaymentService::class)->initiate($booking, 'fake')['payment'];
 
@@ -129,10 +136,12 @@ class PaymentServiceTest extends TestCase
 
         $this->assertSame(Payment::STATUS_FAILED, $payment->fresh()->status);
         $this->assertSame(Booking::STATUS_HELD, $booking->fresh()->status);
+        Notification::assertSentTo($this->user, PaymentFailed::class);
     }
 
     public function test_refund_records_a_refund_and_marks_the_payment_refunded(): void
     {
+        Notification::fake();
         $booking = $this->heldBooking();
         $payment = app(PaymentService::class)->initiate($booking, 'fake')['payment'];
         app(PaymentService::class)->applyWebhookOutcome(
@@ -145,6 +154,7 @@ class PaymentServiceTest extends TestCase
         $this->assertSame('succeeded', $refund->status);
         $this->assertSame(Payment::STATUS_REFUNDED, $payment->fresh()->status);
         $this->assertSame(Booking::STATUS_REFUNDED, $booking->fresh()->status);
+        Notification::assertSentTo($this->user, RefundIssued::class);
     }
 
     public function test_cannot_refund_a_payment_that_never_succeeded(): void
@@ -154,6 +164,34 @@ class PaymentServiceTest extends TestCase
 
         $this->expectException(PaymentException::class);
         app(PaymentService::class)->refund($payment, $payment->amount_cents);
+    }
+
+    public function test_cannot_refund_more_than_the_remaining_balance(): void
+    {
+        $booking = $this->heldBooking();
+        $payment = app(PaymentService::class)->initiate($booking, 'fake')['payment'];
+        app(PaymentService::class)->applyWebhookOutcome(
+            new WebhookOutcome(WebhookOutcome::PAYMENT_SUCCEEDED, $payment->gateway_reference, $payment->amount_cents),
+            'fake',
+        );
+
+        $this->expectException(PaymentException::class);
+        app(PaymentService::class)->refund($payment->fresh(), $payment->amount_cents + 1, 'too much');
+    }
+
+    public function test_cannot_refund_more_than_what_remains_after_a_partial_refund(): void
+    {
+        $booking = $this->heldBooking();
+        $payment = app(PaymentService::class)->initiate($booking, 'fake')['payment'];
+        app(PaymentService::class)->applyWebhookOutcome(
+            new WebhookOutcome(WebhookOutcome::PAYMENT_SUCCEEDED, $payment->gateway_reference, $payment->amount_cents),
+            'fake',
+        );
+
+        app(PaymentService::class)->refund($payment->fresh(), 5000, 'first partial refund');
+
+        $this->expectException(PaymentException::class);
+        app(PaymentService::class)->refund($payment->fresh(), $payment->amount_cents - 5000 + 1, 'second refund, one cent too many');
     }
 
     public function test_reconcile_confirms_a_booking_whose_webhook_never_arrived(): void

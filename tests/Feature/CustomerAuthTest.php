@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Setting;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Models\UserSubscription;
 use App\Notifications\Auth\ResetPassword;
 use App\Notifications\Auth\VerifyEmail;
 use Filament\Facades\Filament;
@@ -55,6 +58,43 @@ class CustomerAuthTest extends TestCase
         $this->assertNull($user->email_verified_at);
 
         Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_registering_with_no_default_plan_configured_leaves_the_customer_unsubscribed(): void
+    {
+        Notification::fake();
+
+        $this->postJson('/api/v1/auth/register', [
+            'first_name' => 'Ada', 'last_name' => 'Lovelace', 'email' => 'ada@example.com',
+            'password' => 'Password123', 'password_confirmation' => 'Password123',
+        ])->assertCreated();
+
+        $user = User::where('email', 'ada@example.com')->firstOrFail();
+        $this->assertTrue($user->subscriptions()->doesntExist());
+    }
+
+    public function test_registering_grants_the_configured_default_plan_with_no_expiry(): void
+    {
+        Notification::fake();
+
+        $plan = SubscriptionPlan::create([
+            'name' => 'Basic', 'code' => 'basic', 'price_cents' => 0, 'currency' => 'USD',
+            'billing_interval' => 'month', 'daily_search_limit' => 5, 'is_active' => true,
+        ]);
+        Setting::set('signup_default_plan_id', (string) $plan->id, 'search_quota');
+
+        $this->postJson('/api/v1/auth/register', [
+            'first_name' => 'Ada', 'last_name' => 'Lovelace', 'email' => 'ada@example.com',
+            'password' => 'Password123', 'password_confirmation' => 'Password123',
+        ])->assertCreated();
+
+        $user = User::where('email', 'ada@example.com')->firstOrFail();
+        $subscription = $user->subscriptions()->firstOrFail();
+
+        $this->assertSame(UserSubscription::STATUS_ACTIVE, $subscription->status);
+        $this->assertSame('signup_default', $subscription->source);
+        $this->assertSame($plan->id, $subscription->subscription_plan_id);
+        $this->assertNull($subscription->ends_at);
     }
 
     public function test_an_unverified_account_cannot_log_in_and_is_sent_a_fresh_link(): void

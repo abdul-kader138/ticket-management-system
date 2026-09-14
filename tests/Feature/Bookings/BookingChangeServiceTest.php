@@ -7,6 +7,7 @@ use App\Models\FlightProvider;
 use App\Models\Payment;
 use App\Models\TravelerProfile;
 use App\Models\User;
+use App\Notifications\BookingChangeConfirmed;
 use App\Services\Bookings\BookingChangeService;
 use App\Services\Bookings\BookingException;
 use App\Services\Bookings\BookingService;
@@ -15,6 +16,7 @@ use App\Services\Payments\DTO\WebhookOutcome;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\Feature\Flights\FakeFlightProvider;
 use Tests\Feature\Payments\FakePaymentGateway;
 use Tests\Feature\Payments\FakePaymentGatewayManager;
@@ -91,6 +93,7 @@ class BookingChangeServiceTest extends TestCase
     public function test_a_more_expensive_change_charges_the_fare_difference(): void
     {
         $booking = $this->confirmedBooking();
+        Notification::fake();
         FakeFlightProvider::$confirmChangeOfferResult = ['new_total_amount' => '250.00', 'currency' => 'USD', 'raw' => ['slices' => []]];
 
         $result = app(BookingChangeService::class)->applyChange($booking, 'chg_1', $this->user, 'fake');
@@ -100,11 +103,13 @@ class BookingChangeServiceTest extends TestCase
         $this->assertNotNull($result['payment']);
         $this->assertSame(5000, $result['payment']->amount_cents);
         $this->assertSame(Payment::STATUS_PENDING, $result['payment']->status);
+        Notification::assertSentTo($this->user, BookingChangeConfirmed::class);
     }
 
     public function test_a_cheaper_change_applies_with_no_charge(): void
     {
         $booking = $this->confirmedBooking();
+        Notification::fake();
         FakeFlightProvider::$confirmChangeOfferResult = ['new_total_amount' => '150.00', 'currency' => 'USD', 'raw' => ['slices' => []]];
 
         $result = app(BookingChangeService::class)->applyChange($booking, 'chg_1', $this->user, 'fake');
@@ -112,6 +117,7 @@ class BookingChangeServiceTest extends TestCase
         $this->assertSame(Booking::STATUS_CHANGED, $booking->fresh()->status);
         $this->assertSame(15000, $booking->fresh()->total_price_cents);
         $this->assertNull($result['payment']);
+        Notification::assertSentTo($this->user, BookingChangeConfirmed::class);
     }
 
     public function test_cannot_apply_a_change_to_a_non_confirmed_booking(): void

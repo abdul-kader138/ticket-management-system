@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\Flights\DTO\SearchCriteria;
 use App\Services\Flights\FlightProviderManager;
+use App\Services\Flights\FlightSearchUnavailableException;
 use App\Services\Flights\SearchQuotaExceededException;
 use App\Services\Flights\SearchQuotaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -82,15 +83,52 @@ class FlightProviderManagerTest extends TestCase
         $this->assertCount(2, $offers);
     }
 
-    public function test_a_failing_provider_does_not_break_the_search(): void
+    public function test_a_failing_provider_alongside_a_working_one_does_not_break_the_search(): void
     {
-        $this->makeProvider();
-        FakeFlightProvider::$shouldThrow = true;
+        $this->makeProvider(['code' => 'working', 'priority' => 0]);
+        $this->makeProvider(['code' => 'failing', 'priority' => 1, 'driver_class' => AlwaysFailingFlightProvider::class]);
+        FakeFlightProvider::$offersToReturn = [['id' => 'off_1']];
 
         $manager = app(FlightProviderManager::class);
         $offers = $manager->search($this->criteria(), $this->user);
 
-        $this->assertCount(0, $offers);
+        // The working provider's offer still comes through; the failing
+        // one is skipped, not fatal.
+        $this->assertCount(1, $offers);
+    }
+
+    public function test_every_provider_failing_throws_instead_of_returning_an_empty_result(): void
+    {
+        $this->makeProvider(['driver_class' => AlwaysFailingFlightProvider::class]);
+
+        $manager = app(FlightProviderManager::class);
+
+        $this->expectException(FlightSearchUnavailableException::class);
+        $manager->search($this->criteria(), $this->user);
+    }
+
+    public function test_a_total_provider_outage_does_not_consume_the_search_quota_or_cache_the_empty_result(): void
+    {
+        $this->makeProvider(['driver_class' => AlwaysFailingFlightProvider::class]);
+
+        $manager = app(FlightProviderManager::class);
+
+        try {
+            $manager->search($this->criteria(), $this->user);
+            $this->fail('Expected a FlightSearchUnavailableException.');
+        } catch (FlightSearchUnavailableException) {
+            // expected
+        }
+
+        $quota = app(SearchQuotaService::class);
+        $this->assertSame(0, $quota->used($this->user, 'day'));
+
+        // A retry immediately after should hit the provider again, not a
+        // cached empty result from the failed attempt.
+        FakeFlightProvider::$offersToReturn = [];
+        $this->makeProvider(['code' => 'now-working']);
+        $manager->search($this->criteria(), $this->user);
+        $this->assertSame(1, $quota->used($this->user, 'day'));
     }
 
     public function test_repeat_searches_are_served_from_cache_not_the_provider(): void

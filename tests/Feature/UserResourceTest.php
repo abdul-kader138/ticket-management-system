@@ -4,7 +4,10 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
+use App\Filament\Resources\UserResource\Pages\ListUsers;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Models\UserSubscription;
 use Database\Seeders\ShieldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -159,5 +162,65 @@ class UserResourceTest extends TestCase
             ])
             ->call('create')
             ->assertHasFormErrors(['email']);
+    }
+
+    private function plan(): SubscriptionPlan
+    {
+        return SubscriptionPlan::create([
+            'name' => 'Plus', 'code' => 'plus', 'price_cents' => 999, 'currency' => 'USD',
+            'billing_interval' => 'month', 'is_active' => true,
+        ]);
+    }
+
+    public function test_an_admin_can_grant_a_complimentary_subscription_to_a_customer(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+        $customer = User::factory()->create();
+        $plan = $this->plan();
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListUsers::class)
+            ->callTableAction('grantSubscription', $customer, data: ['subscription_plan_id' => $plan->id]);
+
+        $subscription = $customer->subscriptions()->firstOrFail();
+        $this->assertSame(UserSubscription::STATUS_ACTIVE, $subscription->status);
+        $this->assertSame('comped', $subscription->source);
+        $this->assertSame($plan->id, $subscription->subscription_plan_id);
+    }
+
+    public function test_the_grant_subscription_action_is_hidden_once_a_customer_already_has_one(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+        $customer = User::factory()->create();
+        $plan = $this->plan();
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListUsers::class)
+            ->callTableAction('grantSubscription', $customer, data: ['subscription_plan_id' => $plan->id]);
+
+        Livewire::test(ListUsers::class)
+            ->assertTableActionHidden('grantSubscription', $customer);
+    }
+
+    public function test_an_admin_can_cancel_a_customers_active_subscription(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+        $customer = User::factory()->create();
+        $plan = $this->plan();
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListUsers::class)
+            ->callTableAction('grantSubscription', $customer, data: ['subscription_plan_id' => $plan->id]);
+
+        Livewire::test(ListUsers::class)
+            ->callTableAction('cancelSubscription', $customer);
+
+        $this->assertSame(UserSubscription::STATUS_CANCELLED, $customer->subscriptions()->firstOrFail()->status);
     }
 }

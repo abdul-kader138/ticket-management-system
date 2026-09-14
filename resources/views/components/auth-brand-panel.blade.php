@@ -112,6 +112,25 @@
     }
     @media (max-width: 1023px) {
         .auth-brand-panel { display: none !important; }
+
+        /* Below the breakpoint the illustrated panel disappears entirely,
+           so without this the sign-in card would float alone on a bare
+           dark background with zero brand identity. This compact header
+           carries the logo/name/tagline in its place — same gradient
+           family as the desktop panel, just condensed to one band instead
+           of a full illustrated side panel. */
+        .auth-brand-mobile-header { display: flex !important; }
+
+        /* Filament's own .fi-simple-main carries a fixed `my-16` (4rem
+           top+bottom on top of its parent's vertical centering), which on
+           a short mobile screen reads as two arbitrary dead gaps rather
+           than deliberate whitespace. Dropping it to a small fixed margin
+           keeps the (now taller, header-carrying) card centered as one
+           block instead of floating with oversized top/bottom padding. */
+        .fi-simple-main { margin-top: 1.5rem !important; margin-bottom: 1.5rem !important; }
+    }
+    @media (min-width: 1024px) {
+        .auth-brand-mobile-header { display: none !important; }
     }
 
     /* ── Flight route + boarding pass illustration ─────────────────────────── */
@@ -187,6 +206,32 @@
     .abp-barcode { display: flex; align-items: flex-end; gap: 2px; height: 1.6rem; margin-top: auto; }
     .abp-barcode span { display: block; width: 2px; background: rgba(255,255,255,.35); }
 </style>
+
+{{-- ── Compact mobile header (<1024px only) ──────────────────────────────────
+     Replaces the illustrated panel, which has no room below the breakpoint —
+     without this, the sign-in card below would be the only thing on the
+     page. Hidden by default; the media query above switches it on. ── --}}
+<div
+    class="auth-brand-mobile-header"
+    style="
+        display: none;
+        align-items: center;
+        gap: .5rem;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 1.75rem 1.5rem 1.5rem;
+        background: {{ $panelBackground }};
+        border-bottom: 1px solid {{ $a15 }};
+    "
+>
+    <div style="display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:.5625rem;background:{{ $accent }};font-size:1rem;font-weight:800;color:#fff;flex-shrink:0;box-shadow:0 4px 16px {{ $a45 }};">
+        {{ strtoupper(substr($appName, 0, 1)) }}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.05rem;min-width:0;">
+        <span style="font-size:1rem;font-weight:700;letter-spacing:-.02em;color:{{ $panelText }};">{{ $appName }}</span>
+        <span style="font-size:.75rem;color:{{ $panelMuted }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $tagline }}</span>
+    </div>
+</div>
 
 <div
     class="auth-brand-panel"

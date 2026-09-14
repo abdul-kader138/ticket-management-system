@@ -118,17 +118,28 @@ class FlightProviderManager
 
         $this->quota->ensureNotExceeded($user);
 
+        $providers = $this->enabledProviders();
         $results = [];
+        $failures = 0;
 
-        foreach ($this->enabledProviders() as $provider) {
+        foreach ($providers as $provider) {
             try {
                 $results[] = $provider->search($criteria);
             } catch (\Throwable $e) {
+                $failures++;
                 Log::warning('Flight provider search failed', [
                     'provider' => $provider::class,
                     'message' => $e->getMessage(),
                 ]);
             }
+        }
+
+        // Every provider errored — this is an outage, not "no flights
+        // found." Neither charges the customer's search quota nor caches
+        // an empty result that a retry (or another customer searching the
+        // same route) would otherwise be stuck with for 5 minutes.
+        if ($providers !== [] && $failures === count($providers)) {
+            throw new FlightSearchUnavailableException;
         }
 
         $merged = OfferCollection::merge(...$results);

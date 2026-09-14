@@ -55,12 +55,18 @@ class AccountDataService
                     'first_name' => $p->first_name, 'last_name' => $p->last_name, 'type' => $p->type,
                 ]),
             ]),
-            'payments' => $user->payments()->get()->map(fn ($payment) => [
+            'payments' => $user->payments()->with('refunds')->get()->map(fn ($payment) => [
                 'gateway' => $payment->gateway,
                 'status' => $payment->status,
                 'amount' => number_format($payment->amount_cents / 100, 2),
                 'currency' => $payment->currency,
                 'created_at' => $payment->created_at,
+                'refunds' => $payment->refunds->map(fn ($refund) => [
+                    'amount' => number_format($refund->amount_cents / 100, 2),
+                    'currency' => $refund->currency,
+                    'reason' => $refund->reason,
+                    'created_at' => $refund->created_at,
+                ]),
             ]),
             'subscriptions' => $user->subscriptions->map(fn ($sub) => [
                 'plan' => $sub->subscriptionPlan->name,
@@ -68,6 +74,14 @@ class AccountDataService
                 'starts_at' => $sub->starts_at,
                 'ends_at' => $sub->ends_at,
             ]),
+            'promotions' => $user->promotionRedemptions->map(fn ($redemption) => [
+                'code' => $redemption->promotion->code,
+                'discount' => number_format($redemption->discount_cents / 100, 2),
+                'redeemed_at' => $redemption->created_at,
+            ]),
+            'referral' => [
+                'referred_by' => $user->referrer?->email,
+            ],
         ];
     }
 
@@ -105,6 +119,12 @@ class AccountDataService
                 'two_factor_recovery_codes' => null,
                 'two_factor_confirmed_at' => null,
                 'password' => Hash::make(Str::random(40)),
+                // Breaks the identifying link to whoever referred them —
+                // the referrer's own reward (already granted at the time,
+                // see BookingObserver::maybeRewardReferrer()) isn't
+                // reversed, but nothing should keep pointing at another
+                // live account from an anonymized one.
+                'referrer_id' => null,
             ])->save();
 
             DB::table('sessions')->where('user_id', $user->id)->delete();

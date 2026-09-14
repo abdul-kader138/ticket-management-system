@@ -3,10 +3,12 @@
 namespace Tests\Feature\Account;
 
 use App\Models\FlightProvider;
+use App\Models\Promotion;
 use App\Models\TravelerProfile;
 use App\Models\User;
 use App\Services\Account\AccountDataService;
 use App\Services\Bookings\BookingService;
+use App\Services\Promotions\PromotionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Feature\Flights\FakeFlightProvider;
@@ -78,5 +80,47 @@ class AccountDataServiceTest extends TestCase
         app(AccountDataService::class)->anonymize($user);
 
         $this->assertFalse(Hash::check('OldPassword123', $user->fresh()->password));
+    }
+
+    public function test_anonymize_clears_the_referral_link(): void
+    {
+        $referrer = User::factory()->create();
+        $user = User::factory()->create();
+        $user->forceFill(['referrer_id' => $referrer->id])->save();
+
+        app(AccountDataService::class)->anonymize($user);
+
+        $this->assertNull($user->fresh()->referrer_id);
+    }
+
+    public function test_export_includes_promotion_redemptions_and_who_referred_the_customer(): void
+    {
+        FakeFlightProvider::reset();
+        FlightProvider::create([
+            'code' => 'fake', 'name' => 'Fake', 'driver_class' => FakeFlightProvider::class,
+            'credentials' => ['token' => 'x'], 'is_enabled' => true, 'priority' => 0, 'timeout' => 30,
+        ]);
+        FakeFlightProvider::$offerDetail = ['id' => 'off_1', 'total_amount' => '100.00', 'total_currency' => 'USD', 'slices' => []];
+
+        $referrer = User::factory()->create(['email' => 'referrer@example.com']);
+        $user = User::factory()->create();
+        $user->forceFill(['referrer_id' => $referrer->id])->save();
+
+        $traveler = TravelerProfile::create([
+            'user_id' => $user->id, 'first_name' => 'Ada', 'last_name' => 'Lovelace', 'date_of_birth' => '1990-01-01',
+        ]);
+        $booking = app(BookingService::class)->createHold($user, 'fake', 'off_1', [['traveler_profile_id' => $traveler->id, 'type' => 'adult']]);
+
+        Promotion::create([
+            'code' => 'SAVE10', 'name' => '10% off', 'type' => Promotion::TYPE_PERCENT,
+            'value' => 10, 'per_user_limit' => 1, 'is_active' => true,
+        ]);
+        app(PromotionService::class)->redeemForBooking($booking, 'SAVE10', $user);
+
+        $export = app(AccountDataService::class)->export($user);
+
+        $this->assertCount(1, $export['promotions']);
+        $this->assertSame('SAVE10', $export['promotions'][0]['code']);
+        $this->assertSame('referrer@example.com', $export['referral']['referred_by']);
     }
 }

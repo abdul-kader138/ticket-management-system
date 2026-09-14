@@ -7,6 +7,8 @@ use App\Models\FlightProvider;
 use App\Models\Payment;
 use App\Models\TravelerProfile;
 use App\Models\User;
+use App\Notifications\BookingCancelled;
+use App\Notifications\RefundIssued;
 use App\Services\Bookings\BookingException;
 use App\Services\Bookings\BookingService;
 use App\Services\Bookings\CancellationService;
@@ -14,6 +16,7 @@ use App\Services\Payments\DTO\WebhookOutcome;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\Feature\Flights\FakeFlightProvider;
 use Tests\Feature\Payments\FakePaymentGateway;
 use Tests\Feature\Payments\FakePaymentGatewayManager;
@@ -72,15 +75,18 @@ class CancellationServiceTest extends TestCase
 
     public function test_cancelling_a_held_booking_needs_no_refund(): void
     {
+        Notification::fake();
         $booking = $this->heldBooking();
 
         app(CancellationService::class)->cancel($booking, 'user', $this->user->id, 'changed my mind');
 
         $this->assertSame(Booking::STATUS_CANCELLED, $booking->fresh()->status);
+        Notification::assertSentTo($this->user, BookingCancelled::class);
     }
 
     public function test_cancelling_a_confirmed_booking_refunds_the_full_amount(): void
     {
+        Notification::fake();
         $booking = $this->confirmedBooking();
         FakeFlightProvider::$cancelResult = ['confirmed' => true, 'refund_amount' => '200.00', 'refund_currency' => 'USD'];
 
@@ -88,6 +94,8 @@ class CancellationServiceTest extends TestCase
 
         $this->assertSame(Booking::STATUS_REFUNDED, $booking->fresh()->status);
         $this->assertSame(Payment::STATUS_REFUNDED, $booking->fresh()->payments()->latest()->first()->status);
+        Notification::assertSentTo($this->user, BookingCancelled::class);
+        Notification::assertSentTo($this->user, RefundIssued::class);
     }
 
     public function test_cancelling_a_non_refundable_confirmed_booking_takes_no_refund(): void

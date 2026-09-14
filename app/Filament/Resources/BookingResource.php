@@ -11,6 +11,7 @@ use App\Services\Bookings\BookingException;
 use App\Services\Bookings\CancellationService;
 use App\Services\Payments\PaymentException;
 use App\Services\Payments\PaymentService;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -18,8 +19,11 @@ use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 
 /**
  * Ops visibility into customer bookings, plus the two manual overrides a
@@ -54,7 +58,13 @@ class BookingResource extends Resource
             ->columns([
                 TextColumn::make('id')
                     ->label('Booking #')
+                    ->searchable()
                     ->sortable(),
+
+                TextColumn::make('pnr')
+                    ->label('PNR')
+                    ->searchable()
+                    ->default('—'),
 
                 TextColumn::make('user.name')
                     ->label('Customer')
@@ -93,6 +103,29 @@ class BookingResource extends Resource
                         Booking::STATUS_REFUNDED => 'Refunded',
                         Booking::STATUS_EXPIRED => 'Expired',
                     ]),
+
+                Filter::make('created_at')
+                    ->label('Booked between')
+                    ->form([
+                        DatePicker::make('booked_from')->native(false),
+                        DatePicker::make('booked_until')->native(false),
+                    ])
+                    ->query(fn (Builder $query, array $data) => $query
+                        ->when($data['booked_from'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '>=', $date))
+                        ->when($data['booked_until'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '<=', $date)))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if ($data['booked_from'] ?? null) {
+                            $indicators[] = 'Booked from '.Carbon::parse($data['booked_from'])->toFormattedDateString();
+                        }
+
+                        if ($data['booked_until'] ?? null) {
+                            $indicators[] = 'Booked until '.Carbon::parse($data['booked_until'])->toFormattedDateString();
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->actions([
                 ViewAction::make(),

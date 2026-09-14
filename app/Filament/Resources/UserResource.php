@@ -3,13 +3,19 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Models\UserSubscription;
+use App\Services\Subscriptions\SubscriptionException;
+use App\Services\Subscriptions\SubscriptionService;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
@@ -134,6 +140,18 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            // The 'subscription' column below reads $record->subscriptions
+            // rather than calling SubscriptionService per row — this eager
+            // load is what keeps that a fixed 2 queries for the whole page
+            // instead of 2 per row (see BookingResource's identical note
+            // on its 'payments' eager load).
+            ->modifyQueryUsing(fn ($query) => $query->with(['subscriptions' => fn ($q) => $q
+                ->where('status', UserSubscription::STATUS_ACTIVE)
+                ->where('starts_at', '<=', now())
+                ->where(fn ($q2) => $q2->whereNull('ends_at')->orWhere('ends_at', '>', now()))
+                ->latest('starts_at')
+                ->with('subscriptionPlan'),
+            ]))
             ->columns([
                 TextColumn::make('first_name')
                     ->label('First name')
@@ -155,6 +173,12 @@ class UserResource extends Resource
                     ->separator(',')
                     ->color('primary'),
 
+                TextColumn::make('subscription')
+                    ->label('Plan')
+                    ->state(fn (User $record) => $record->subscriptions->first()?->subscriptionPlan?->name ?? '—')
+                    ->badge()
+                    ->color(fn (string $state) => $state === '—' ? 'gray' : 'success'),
+
                 TextColumn::make('email_verified_at')
                     ->label('Verified')
                     ->dateTime()
@@ -174,6 +198,57 @@ class UserResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
+                // Comps a plan onto a customer without going through
+                // checkout — for support gestures, migrating a legacy
+                // subscriber, or testing. Goes through SubscriptionService
+                // so ends_at/the active-plan cache stay correct, rather
+                // than writing a UserSubscription row by hand.
+                Action::make('grantSubscription')
+                    ->label('Grant subscription')
+                    ->icon('heroicon-o-gift')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalDescription('Activates immediately, no payment required — for comps, migrations, or support gestures.')
+                    ->visible(fn (User $record) => auth()->user()->can('update_user')
+                        && ! app(SubscriptionService::class)->hasOpenSubscription($record)
+                        && SubscriptionPlan::query()->active()->exists())
+                    ->form([
+                        Select::make('subscription_plan_id')
+                            ->label('Plan')
+                            ->options(fn () => SubscriptionPlan::query()->active()->orderBy('price_cents')->pluck('name', 'id'))
+                            ->required(),
+                    ])
+                    ->action(function (User $record, array $data) {
+                        try {
+                            app(SubscriptionService::class)->grantComplimentary(
+                                $record,
+                                SubscriptionPlan::findOrFail($data['subscription_plan_id']),
+                            );
+                            Notification::make()->success()->title('Subscription granted')->send();
+                        } catch (SubscriptionException $e) {
+                            Notification::make()->danger()->title($e->getMessage())->send();
+                        }
+                    }),
+
+                Action::make('cancelSubscription')
+                    ->label('Cancel subscription')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('Ends access immediately. No refund is issued for the unused remainder.')
+                    ->visible(fn (User $record) => auth()->user()->can('update_user')
+                        && app(SubscriptionService::class)->activeSubscription($record))
+                    ->action(function (User $record) {
+                        $subscriptions = app(SubscriptionService::class);
+
+                        try {
+                            $subscriptions->cancel($subscriptions->activeSubscription($record));
+                            Notification::make()->success()->title('Subscription cancelled')->send();
+                        } catch (SubscriptionException $e) {
+                            Notification::make()->danger()->title($e->getMessage())->send();
+                        }
+                    }),
+
                 EditAction::make(),
                 DeleteAction::make(),
             ])

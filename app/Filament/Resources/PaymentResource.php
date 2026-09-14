@@ -3,12 +3,17 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PaymentResource\Pages;
+use App\Models\Booking;
 use App\Models\Payment;
+use Filament\Forms\Components\DatePicker;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 
 /**
  * Read-only ops visibility into payments — see docs/ROADMAP.md, Phase 5.
@@ -31,12 +36,25 @@ class PaymentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('payable'))
             ->columns([
-                TextColumn::make('id')->label('Payment #')->sortable(),
+                TextColumn::make('id')->label('Payment #')->searchable()->sortable(),
+
+                TextColumn::make('gateway_reference')
+                    ->label('Gateway ref.')
+                    ->searchable()
+                    ->default('—')
+                    ->toggleable(),
 
                 TextColumn::make('user.name')
                     ->label('Customer')
                     ->searchable(['first_name', 'last_name', 'email']),
+
+                TextColumn::make('payable')
+                    ->label('For')
+                    ->state(fn (Payment $record) => $record->payable instanceof Booking
+                        ? 'Booking '.($record->payable->pnr ?: '#'.$record->payable->id)
+                        : 'Subscription'),
 
                 TextColumn::make('gateway')->badge(),
 
@@ -66,6 +84,29 @@ class PaymentResource extends Resource
                     Payment::STATUS_REFUNDED => 'Refunded',
                     Payment::STATUS_PARTIALLY_REFUNDED => 'Partially Refunded',
                 ]),
+
+                Filter::make('created_at')
+                    ->label('Created between')
+                    ->form([
+                        DatePicker::make('created_from')->native(false),
+                        DatePicker::make('created_until')->native(false),
+                    ])
+                    ->query(fn (Builder $query, array $data) => $query
+                        ->when($data['created_from'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '>=', $date))
+                        ->when($data['created_until'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '<=', $date)))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if ($data['created_from'] ?? null) {
+                            $indicators[] = 'Created from '.Carbon::parse($data['created_from'])->toFormattedDateString();
+                        }
+
+                        if ($data['created_until'] ?? null) {
+                            $indicators[] = 'Created until '.Carbon::parse($data['created_until'])->toFormattedDateString();
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->actions([ViewAction::make()])
             ->bulkActions([]);

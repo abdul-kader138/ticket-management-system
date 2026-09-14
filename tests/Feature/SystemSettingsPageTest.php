@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\SystemSettings;
 use App\Models\Setting;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -70,5 +71,21 @@ class SystemSettingsPageTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(8, (int) Setting::get('booking_hold_expiry_hours'));
+    }
+
+    public function test_a_default_signup_plan_can_be_configured(): void
+    {
+        $this->actingAsSuperAdmin();
+        $plan = SubscriptionPlan::create([
+            'name' => 'Basic', 'code' => 'basic', 'price_cents' => 0, 'currency' => 'USD',
+            'billing_interval' => 'month', 'is_active' => true,
+        ]);
+
+        Livewire::test(SystemSettings::class)
+            ->fillForm(['signup_default_plan_id' => $plan->id])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame((string) $plan->id, Setting::get('signup_default_plan_id'));
     }
 }

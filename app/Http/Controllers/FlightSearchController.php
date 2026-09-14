@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Flights\DTO\SearchCriteria;
 use App\Services\Flights\DuffelApiException;
 use App\Services\Flights\FlightProviderManager;
+use App\Services\Flights\FlightSearchUnavailableException;
 use App\Services\Flights\SearchQuotaExceededException;
 use App\Services\Flights\SearchQuotaService;
 use Illuminate\Http\JsonResponse;
@@ -91,6 +92,8 @@ class FlightSearchController extends Controller
             return back()
                 ->withInput()
                 ->with('error', $e->getMessage());
+        } catch (FlightSearchUnavailableException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
         }
 
         return view('flights.results', [

@@ -53,14 +53,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/subscription-plans', [SubscriptionController::class, 'plans'])->name('subscription-plans.index');
 
     Route::prefix('auth')->name('auth.')->group(function () {
-        Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
+        Route::post('/register', [RegisteredUserController::class, 'store'])
+            ->middleware('throttle:login')
+            ->name('register');
         Route::post('/login', [AuthenticatedSessionController::class, 'store'])
             ->middleware('throttle:login')
             ->name('login');
         Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
             ->middleware('throttle:login')
             ->name('password.email');
-        Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
+        Route::post('/reset-password', [NewPasswordController::class, 'store'])
+            ->middleware('throttle:login')
+            ->name('password.store');
 
         // Second step of the challenge started by POST /auth/login when
         // the account has 2FA enabled — see
@@ -100,6 +104,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::post('/account/two-factor/setup', [TwoFactorController::class, 'setup'])->name('account.two-factor.setup');
         Route::post('/account/two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('account.two-factor.confirm');
+        Route::post('/account/two-factor/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('account.two-factor.recovery-codes');
         Route::delete('/account/two-factor', [TwoFactorController::class, 'destroy'])->name('account.two-factor.destroy');
 
         Route::apiResource('traveler-profiles', TravelerProfileController::class)

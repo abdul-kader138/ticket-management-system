@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Auth\RegisterRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\User;
+use App\Services\Subscriptions\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 
 class RegisteredUserController extends Controller
@@ -21,8 +22,11 @@ class RegisteredUserController extends Controller
      * response carries the created customer with `email_verified: false` so
      * the SPA can send the user straight to a "verify your email" screen;
      * the verification link works with no session (see routes/api.php).
+     *
+     * grantSignupDefault() is a no-op unless an admin has configured a
+     * default plan in System Settings — see SubscriptionService.
      */
-    public function store(RegisterRequest $request): JsonResponse
+    public function store(RegisterRequest $request, SubscriptionService $subscriptions): JsonResponse
     {
         $data = $request->validated();
 
@@ -40,6 +44,8 @@ class RegisteredUserController extends Controller
         if ($referrer) {
             $user->forceFill(['referrer_id' => $referrer->id])->save();
         }
+
+        $subscriptions->grantSignupDefault($user);
 
         $user->sendEmailVerificationNotification();
 

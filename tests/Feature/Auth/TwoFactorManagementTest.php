@@ -96,4 +96,48 @@ class TwoFactorManagementTest extends TestCase
 
         $this->assertFalse($user->fresh()->hasEnabledTwoFactorAuthentication());
     }
+
+    public function test_regenerating_recovery_codes_requires_the_correct_password(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('Password123'),
+            'two_factor_secret' => 'secret',
+            'two_factor_recovery_codes' => ['original-code'],
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $this->actingAs($user, 'web')
+            ->postJson('/api/v1/account/two-factor/recovery-codes', ['password' => 'wrong'])
+            ->assertUnprocessable();
+
+        $this->assertSame(['original-code'], $user->fresh()->two_factor_recovery_codes);
+    }
+
+    public function test_regenerating_recovery_codes_replaces_the_old_ones(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('Password123'),
+            'two_factor_secret' => 'secret',
+            'two_factor_recovery_codes' => ['original-code'],
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user, 'web')
+            ->postJson('/api/v1/account/two-factor/recovery-codes', ['password' => 'Password123'])
+            ->assertOk();
+
+        $newCodes = $response->json('recovery_codes');
+        $this->assertNotEmpty($newCodes);
+        $this->assertNotContains('original-code', $newCodes);
+        $this->assertSame($newCodes, $user->fresh()->two_factor_recovery_codes);
+    }
+
+    public function test_cannot_regenerate_recovery_codes_when_two_factor_is_not_enabled(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('Password123')]);
+
+        $this->actingAs($user, 'web')
+            ->postJson('/api/v1/account/two-factor/recovery-codes', ['password' => 'Password123'])
+            ->assertStatus(422);
+    }
 }

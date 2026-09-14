@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Models\SubscriptionPlan;
 use App\Providers\Filament\AdminPanelProvider;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
@@ -102,6 +103,7 @@ class SystemSettings extends Page implements HasForms
             'default_daily_search_limit' => Setting::get('default_daily_search_limit', 10),
             'default_monthly_search_limit' => Setting::get('default_monthly_search_limit', 300),
             'referral_reward_bonus_searches' => Setting::get('referral_reward_bonus_searches', 20),
+            'signup_default_plan_id' => Setting::get('signup_default_plan_id') ?: null,
 
             // Payments
             'stripe_secret_key' => Setting::get('stripe_secret_key', ''),
@@ -406,6 +408,16 @@ class SystemSettings extends Page implements HasForms
                                         ->default(20)
                                         ->required(),
                                 ]),
+
+                            Section::make('New Customer Default')
+                                ->description('Granted automatically the moment someone registers — no payment, and it never expires on its own (see Subscription Plans). Leave unset to keep new customers on the search limits above until they subscribe themselves.')
+                                ->schema([
+                                    Select::make('signup_default_plan_id')
+                                        ->label('Default plan for new signups')
+                                        ->options(fn () => SubscriptionPlan::query()->active()->orderBy('price_cents')->pluck('name', 'id'))
+                                        ->placeholder('None — no automatic plan')
+                                        ->native(false),
+                                ]),
                         ]),
 
                     // ── Payments ─────────────────────────────────────────────
@@ -549,6 +561,7 @@ class SystemSettings extends Page implements HasForms
             'default_daily_search_limit' => 'search_quota',
             'default_monthly_search_limit' => 'search_quota',
             'referral_reward_bonus_searches' => 'search_quota',
+            'signup_default_plan_id' => 'search_quota',
             'stripe_secret_key' => 'payments',
             'stripe_publishable_key' => 'payments',
             'stripe_webhook_secret' => 'payments',

@@ -7,6 +7,8 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\UserSubscription;
+use App\Notifications\PaymentFailed;
+use App\Notifications\RefundIssued;
 use App\Services\Payments\DTO\WebhookOutcome;
 use App\Services\Subscriptions\SubscriptionService;
 use Illuminate\Database\Eloquent\Model;
@@ -206,6 +208,16 @@ class PaymentService
             throw new PaymentException('Only a succeeded payment can be refunded.');
         }
 
+        $remainingCents = $payment->amount_cents - $payment->totalRefundedCents();
+
+        if ($amountCents > $remainingCents) {
+            throw new PaymentException(sprintf(
+                'Refund amount exceeds the remaining refundable balance of %s %s.',
+                $payment->currency,
+                number_format($remainingCents / 100, 2),
+            ));
+        }
+
         $gateway = $this->gateways->get($payment->gateway);
         $result = $gateway->refund($payment, $amountCents);
 
@@ -269,6 +281,7 @@ class PaymentService
         $payment->update(['status' => Payment::STATUS_FAILED]);
 
         $payable = $payment->payable;
+        $payable->user->notify(new PaymentFailed($payment));
 
         if ($payable instanceof Booking && $payable->status === Booking::STATUS_PENDING_PAYMENT) {
             $payable->transitionTo(Booking::STATUS_HELD, actorType: 'system', payload: ['reason' => 'payment_failed']);
@@ -297,6 +310,8 @@ class PaymentService
             'status' => Refund::STATUS_SUCCEEDED,
             'gateway_reference' => $gatewayReference,
         ]);
+
+        $payment->payable->user->notify(new RefundIssued($refund));
 
         $totalRefunded = $payment->totalRefundedCents();
         $payment->update([

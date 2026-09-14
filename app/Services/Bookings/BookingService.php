@@ -7,6 +7,7 @@ use App\Models\FlightProvider;
 use App\Models\Setting;
 use App\Models\TravelerProfile;
 use App\Models\User;
+use App\Notifications\BookingExpired;
 use App\Services\Flights\DuffelApiException;
 use App\Services\Flights\FlightProviderManager;
 use Illuminate\Support\Carbon;
@@ -166,10 +167,12 @@ class BookingService
         $expired = Booking::query()
             ->where('status', Booking::STATUS_HELD)
             ->where('expires_at', '<', now())
+            ->with('user')
             ->get();
 
         foreach ($expired as $booking) {
             $booking->transitionTo(Booking::STATUS_EXPIRED, actorType: 'system');
+            $booking->user->notify(new BookingExpired($booking));
         }
 
         return $expired->count();
