@@ -110,6 +110,29 @@
             box-sizing: border-box;
         }
     }
+
+    /* This page is a fixed dark theme regardless of the admin's chosen
+       panel theme (System Settings → Appearance) — see the palette comment
+       above. Filament's dark mode is panel-wide, though: pick "Light" (or
+       "Sepia") there and <html> correctly gets no `dark` class, so every
+       Filament component here — the "Sign in" heading, field labels, the
+       "or sign up" line — switches to ITS light-mode text classes
+       (text-gray-950 etc.), rendering dark text on this same forced-dark
+       background. Toggling a `dark` class onto <html> to fix it doesn't
+       hold: Filament's own Alpine theme store re-syncs it against the
+       admin's real preference on init, undoing a manual override a tick
+       later. Targeting the actual utility classes directly is what
+       actually sticks, not fighting the framework's state. Scoped to
+       .fi-simple-page (all these auth pages), not just the card, so it
+       also holds for the compact mobile header above. */
+    /* :not(.fi-ac-icon-btn-action) excludes the password show/hide toggle —
+       it sits inside the white input field, not on the dark card
+       background, so it needs to stay a plain mid-gray for contrast
+       against white regardless of the page's own forced-dark treatment. */
+    .fi-simple-page .text-gray-950 { color: rgba(255, 255, 255, .92) !important; }
+    .fi-simple-page .text-gray-500 { color: rgba(255, 255, 255, .55) !important; }
+    .fi-simple-page .text-gray-400:not(.fi-ac-icon-btn-action) { color: rgba(255, 255, 255, .35) !important; }
+    .fi-simple-page .ring-gray-950\/10 { --tw-ring-color: rgba(255, 255, 255, .15) !important; }
     @media (max-width: 1023px) {
         .auth-brand-panel { display: none !important; }
 
