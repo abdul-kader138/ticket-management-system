@@ -102,6 +102,16 @@ class AppServiceProvider extends ServiceProvider
         // needs its own tight limiter — keyed by the challenge token itself
         // (not email/IP) since that's what's actually being brute-forced.
         RateLimiter::for('2fa-challenge', fn ($request) => Limit::perMinute(5)->by($request->input('challenge_token').'|'.$request->ip()));
+
+        // Promo codes are short, guessable strings with no other brute-force
+        // protection (no lockout, no CAPTCHA) — keyed per authenticated user
+        // since both endpoints require auth:sanctum.
+        RateLimiter::for('promotion-redeem', fn ($request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
+
+        // Subscribing and cancelling both trigger a real gateway call (or
+        // touch billing state) per request — unlike the read-only 'api'
+        // limiter these deserve their own, tighter ceiling per user.
+        RateLimiter::for('subscriptions-write', fn ($request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
     }
 
     /**

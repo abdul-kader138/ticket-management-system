@@ -45,11 +45,4 @@ class UserSubscription extends Model
     {
         return $this->morphMany(Payment::class, 'payable');
     }
-
-    public function isActive(): bool
-    {
-        return $this->status === self::STATUS_ACTIVE
-            && $this->starts_at->isPast()
-            && ($this->ends_at === null || $this->ends_at->isFuture());
-    }
 }

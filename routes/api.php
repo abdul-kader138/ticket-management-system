@@ -117,10 +117,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/bookings/{booking}/change/search', [BookingChangeController::class, 'search'])->name('bookings.change.search');
         Route::post('/bookings/{booking}/change', [BookingChangeController::class, 'store'])->name('bookings.change.store');
 
-        Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
+        Route::post('/subscriptions', [SubscriptionController::class, 'store'])
+            ->middleware('throttle:subscriptions-write')
+            ->name('subscriptions.store');
+        Route::post('/account/subscription/cancel', [SubscriptionController::class, 'cancel'])
+            ->middleware('throttle:subscriptions-write')
+            ->name('account.subscription.cancel');
         Route::get('/account/subscription', [SubscriptionController::class, 'current'])->name('account.subscription');
 
-        Route::post('/bookings/{booking}/promotions', [PromotionController::class, 'applyToBooking'])->name('bookings.promotions.apply');
-        Route::post('/promotions/redeem', [PromotionController::class, 'redeem'])->name('promotions.redeem');
+        Route::post('/bookings/{booking}/promotions', [PromotionController::class, 'applyToBooking'])
+            ->middleware('throttle:promotion-redeem')
+            ->name('bookings.promotions.apply');
+        Route::post('/promotions/redeem', [PromotionController::class, 'redeem'])
+            ->middleware('throttle:promotion-redeem')
+            ->name('promotions.redeem');
     });
 });

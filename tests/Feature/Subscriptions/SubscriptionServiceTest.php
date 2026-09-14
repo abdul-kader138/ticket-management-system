@@ -6,6 +6,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\SubscriptionTierRule;
 use App\Models\User;
 use App\Models\UserSubscription;
+use App\Services\Subscriptions\SubscriptionException;
 use App\Services\Subscriptions\SubscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -171,5 +172,77 @@ class SubscriptionServiceTest extends TestCase
         $service->activate($subscription->fresh());
 
         $this->assertSame(SubscriptionPlan::UNLIMITED, $service->searchLimit($user, 'day'));
+    }
+
+    public function test_a_second_pending_subscription_cannot_be_created_while_one_is_open(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan();
+        $service = app(SubscriptionService::class);
+
+        $service->createPendingSubscription($user, $plan);
+
+        $this->expectException(SubscriptionException::class);
+        $service->createPendingSubscription($user, $plan);
+    }
+
+    public function test_a_new_subscription_can_be_created_once_the_previous_one_failed(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan();
+        $service = app(SubscriptionService::class);
+
+        $first = $service->createPendingSubscription($user, $plan);
+        $service->markFailed($first->fresh());
+
+        $second = $service->createPendingSubscription($user, $plan);
+        $this->assertNotSame($first->id, $second->id);
+    }
+
+    public function test_cancelling_ends_the_subscription_immediately(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan();
+        $service = app(SubscriptionService::class);
+
+        $subscription = $service->createPendingSubscription($user, $plan);
+        $service->activate($subscription->fresh());
+
+        $service->cancel($subscription->fresh());
+
+        $this->assertSame(UserSubscription::STATUS_CANCELLED, $subscription->fresh()->status);
+        $this->assertNull($service->activePlan($user));
+    }
+
+    public function test_cancelling_a_non_active_subscription_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan();
+        $service = app(SubscriptionService::class);
+
+        $subscription = $service->createPendingSubscription($user, $plan);
+
+        $this->expectException(SubscriptionException::class);
+        $service->cancel($subscription);
+    }
+
+    public function test_equal_priority_tiers_resolve_deterministically_to_the_most_recently_created(): void
+    {
+        $older = $this->plan(['name' => 'Silver']);
+        $newer = $this->plan(['name' => 'Gold']);
+
+        SubscriptionTierRule::create([
+            'name' => 'Silver Tier', 'subscription_plan_id' => $older->id,
+            'min_total_spend_cents' => 0, 'min_account_age_days' => 0, 'priority' => 10, 'is_active' => true,
+        ]);
+        $goldRule = SubscriptionTierRule::create([
+            'name' => 'Gold Tier', 'subscription_plan_id' => $newer->id,
+            'min_total_spend_cents' => 0, 'min_account_age_days' => 0, 'priority' => 10, 'is_active' => true,
+        ]);
+
+        $user = User::factory()->create();
+        $service = app(SubscriptionService::class);
+
+        $this->assertSame($goldRule->id, $service->matchedTierRule($user)->id);
     }
 }

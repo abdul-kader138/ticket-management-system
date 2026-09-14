@@ -94,4 +94,72 @@ class SubscriptionApiTest extends TestCase
         $current = $this->actingAs($user, 'web')->getJson('/api/v1/account/subscription')->assertOk();
         $this->assertNull($current->json('plan'));
     }
+
+    public function test_subscribing_to_an_inactive_plan_returns_a_validation_error_not_a_404(): void
+    {
+        $user = User::factory()->create();
+        $hidden = SubscriptionPlan::create([
+            'name' => 'Hidden', 'code' => 'hidden', 'price_cents' => 500, 'is_active' => false,
+        ]);
+
+        $this->actingAs($user, 'web')
+            ->postJson('/api/v1/subscriptions', ['plan_id' => $hidden->id, 'gateway' => 'stripe'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('plan_id');
+    }
+
+    public function test_a_user_cannot_start_a_second_subscription_while_one_is_already_pending(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan();
+
+        $this->actingAs($user, 'web')
+            ->postJson('/api/v1/subscriptions', ['plan_id' => $plan->id, 'gateway' => 'stripe'])
+            ->assertCreated();
+
+        $this->actingAs($user, 'web')
+            ->postJson('/api/v1/subscriptions', ['plan_id' => $plan->id, 'gateway' => 'stripe'])
+            ->assertStatus(422)
+            ->assertJson(['message' => 'You already have a subscription in progress or active.']);
+
+        $this->assertSame(1, UserSubscription::where('user_id', $user->id)->count());
+    }
+
+    public function test_a_customer_can_cancel_their_active_subscription(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->plan();
+
+        $response = $this->actingAs($user, 'web')
+            ->postJson('/api/v1/subscriptions', ['plan_id' => $plan->id, 'gateway' => 'stripe'])
+            ->assertCreated();
+
+        $subscription = UserSubscription::findOrFail($response->json('subscription_id'));
+        $payment = $subscription->payments()->first();
+
+        app(PaymentService::class)->applyWebhookOutcome(
+            new WebhookOutcome(WebhookOutcome::PAYMENT_SUCCEEDED, $payment->gateway_reference, $payment->amount_cents),
+            'stripe',
+        );
+
+        $this->actingAs($user, 'web')
+            ->postJson('/api/v1/account/subscription/cancel')
+            ->assertOk()
+            ->assertJson(['message' => 'Subscription cancelled.']);
+
+        $this->assertSame(UserSubscription::STATUS_CANCELLED, $subscription->fresh()->status);
+
+        $current = $this->actingAs($user, 'web')->getJson('/api/v1/account/subscription')->assertOk();
+        $this->assertNull($current->json('plan'));
+    }
+
+    public function test_cancelling_with_no_active_subscription_returns_a_clear_error(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'web')
+            ->postJson('/api/v1/account/subscription/cancel')
+            ->assertStatus(422)
+            ->assertJson(['message' => 'You have no active subscription to cancel.']);
+    }
 }

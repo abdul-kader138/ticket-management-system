@@ -88,6 +88,11 @@ class Booking extends Model
         return $this->morphMany(Payment::class, 'payable');
     }
 
+    public function promotionRedemptions(): HasMany
+    {
+        return $this->hasMany(PromotionRedemption::class);
+    }
+
     public function isHeld(): bool
     {
         return $this->status === self::STATUS_HELD;

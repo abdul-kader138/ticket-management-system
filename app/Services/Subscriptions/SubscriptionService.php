@@ -6,6 +6,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\SubscriptionTierRule;
 use App\Models\User;
 use App\Models\UserSubscription;
+use Illuminate\Support\Facades\DB;
 
 /**
  * See docs/ROADMAP.md, Phase 7. Deliberately has no dependency on
@@ -29,7 +30,7 @@ class SubscriptionService
      * the instance/request lifetime — Laravel doesn't share this class as
      * a singleton across requests, so there's no staleness risk to manage.
      *
-     * @var array<int, SubscriptionPlan|false>
+     * @var array<int, UserSubscription|false>
      */
     private array $activePlanCache = [];
 
@@ -38,16 +39,37 @@ class SubscriptionService
      */
     private array $tierRuleCache = [];
 
+    /**
+     * @throws SubscriptionException
+     */
     public function createPendingSubscription(User $user, SubscriptionPlan $plan): UserSubscription
     {
-        return UserSubscription::create([
-            'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
-            'source' => 'purchased',
-            'status' => UserSubscription::STATUS_PENDING_PAYMENT,
-            'starts_at' => now(),
-            'auto_renew' => false,
-        ]);
+        return DB::transaction(function () use ($user, $plan) {
+            // Locks the user row so two concurrent purchase attempts (double
+            // click, retried request) serialize instead of both passing the
+            // "no open subscription" check and creating duplicate pending
+            // rows / duplicate charges.
+            User::query()->whereKey($user->id)->lockForUpdate()->first();
+
+            $hasOpenSubscription = UserSubscription::query()
+                ->where('user_id', $user->id)
+                ->whereIn('status', [UserSubscription::STATUS_PENDING_PAYMENT, UserSubscription::STATUS_ACTIVE])
+                ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
+                ->exists();
+
+            if ($hasOpenSubscription) {
+                throw new SubscriptionException('You already have a subscription in progress or active.');
+            }
+
+            return UserSubscription::create([
+                'user_id' => $user->id,
+                'subscription_plan_id' => $plan->id,
+                'source' => 'purchased',
+                'status' => UserSubscription::STATUS_PENDING_PAYMENT,
+                'starts_at' => now(),
+                'auto_renew' => false,
+            ]);
+        });
     }
 
     /**
@@ -73,8 +95,21 @@ class SubscriptionService
         $this->forgetActivePlanCache($subscription->user_id);
     }
 
+    /**
+     * Ends the subscription's access immediately — no proration, no refund
+     * for the unused remainder of the current period. That's a deliberate
+     * simple default, not an oversight: this app has no recurring-billing
+     * integration (see the auto_renew column comment on the migration), so
+     * there's no partial-period credit concept to reason about yet.
+     *
+     * @throws SubscriptionException
+     */
     public function cancel(UserSubscription $subscription): void
     {
+        if ($subscription->status !== UserSubscription::STATUS_ACTIVE) {
+            throw new SubscriptionException('Only an active subscription can be cancelled.');
+        }
+
         $subscription->update(['status' => UserSubscription::STATUS_CANCELLED, 'ends_at' => now()]);
         $this->forgetActivePlanCache($subscription->user_id);
     }
@@ -108,6 +143,17 @@ class SubscriptionService
 
     public function activePlan(User $user): ?SubscriptionPlan
     {
+        return $this->activeSubscription($user)?->subscriptionPlan;
+    }
+
+    /**
+     * The row backing activePlan() — needed wherever a caller must act on
+     * the subscription itself (e.g. cancelling it), not just read its plan.
+     * Shares the same cache as activePlan() rather than a second one, since
+     * the two must never disagree about which subscription is "the" active one.
+     */
+    public function activeSubscription(User $user): ?UserSubscription
+    {
         if (! array_key_exists($user->id, $this->activePlanCache)) {
             $this->activePlanCache[$user->id] = UserSubscription::query()
                 ->where('user_id', $user->id)
@@ -115,8 +161,7 @@ class SubscriptionService
                 ->where('starts_at', '<=', now())
                 ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
                 ->latest('starts_at')
-                ->first()
-                ?->subscriptionPlan ?? false;
+                ->first() ?? false;
         }
 
         return $this->activePlanCache[$user->id] ?: null;
@@ -132,6 +177,7 @@ class SubscriptionService
                 ->where('min_total_spend_cents', '<=', $user->total_spend_cents)
                 ->where('min_account_age_days', '<=', $accountAgeDays)
                 ->orderByDesc('priority')
+                ->orderByDesc('id')
                 ->first() ?? false;
         }
 

@@ -30,15 +30,21 @@ class PromotionService
             throw new PromotionException('A code can only be applied before payment.');
         }
 
-        $promotion = $this->findRedeemable($code, $user);
+        $code = trim($code);
 
-        if (! in_array($promotion->type, [Promotion::TYPE_PERCENT, Promotion::TYPE_FIXED], true)) {
-            throw new PromotionException('This code can\'t be applied at checkout.');
-        }
+        return DB::transaction(function () use ($code, $user, $booking) {
+            if ($booking->promotionRedemptions()->exists()) {
+                throw new PromotionException('A code has already been applied to this booking.');
+            }
 
-        $discountCents = $this->computeDiscount($promotion, $booking->total_price_cents);
+            $promotion = $this->findRedeemable($code, $user, lock: true);
 
-        return DB::transaction(function () use ($promotion, $user, $booking, $discountCents) {
+            if (! in_array($promotion->type, [Promotion::TYPE_PERCENT, Promotion::TYPE_FIXED], true)) {
+                throw new PromotionException('This code can\'t be applied at checkout.');
+            }
+
+            $discountCents = $this->computeDiscount($promotion, $booking->total_price_cents);
+
             $redemption = $promotion->redemptions()->create([
                 'user_id' => $user->id,
                 'booking_id' => $booking->id,
@@ -56,23 +62,39 @@ class PromotionService
      */
     public function redeemStandalone(User $user, string $code): PromotionRedemption
     {
-        $promotion = $this->findRedeemable($code, $user);
+        $code = trim($code);
 
-        if ($promotion->type !== Promotion::TYPE_FREE_SEARCH_BONUS) {
-            throw new PromotionException('This code must be applied at checkout.');
-        }
+        return DB::transaction(function () use ($code, $user) {
+            $promotion = $this->findRedeemable($code, $user, lock: true);
 
-        $this->quota->grantBonusSearches($user, 'day', $promotion->value);
+            if ($promotion->type !== Promotion::TYPE_FREE_SEARCH_BONUS) {
+                throw new PromotionException('This code must be applied at checkout.');
+            }
 
-        return $promotion->redemptions()->create(['user_id' => $user->id, 'discount_cents' => 0]);
+            $this->quota->grantBonusSearches($user, 'day', $promotion->value);
+
+            return $promotion->redemptions()->create(['user_id' => $user->id, 'discount_cents' => 0]);
+        });
     }
 
     /**
+     * Loads the promotion and validates it's redeemable by this user. When
+     * $lock is true, this must run inside a DB::transaction() — it locks
+     * the promotion row for the duration of the transaction so that two
+     * concurrent redemptions of the same code can't both pass the
+     * usage-limit / per-user-limit checks before either commits.
+     *
      * @throws PromotionException
      */
-    private function findRedeemable(string $code, User $user): Promotion
+    private function findRedeemable(string $code, User $user, bool $lock = false): Promotion
     {
-        $promotion = Promotion::where('code', $code)->first();
+        $query = Promotion::where('code', $code);
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $promotion = $query->first();
 
         if (! $promotion || ! $promotion->isCurrentlyActive()) {
             throw new PromotionException('This code is invalid or has expired.');

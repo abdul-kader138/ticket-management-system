@@ -48,7 +48,7 @@ class BookingObserver
             return; // Not this user's first confirmed booking.
         }
 
-        $referrer = User::find($user->referrer_id);
+        $referrer = $user->referrer;
 
         if (! $referrer) {
             return;
@@ -57,5 +57,17 @@ class BookingObserver
         $reward = (int) Setting::get('referral_reward_bonus_searches', 20);
 
         $this->quota->grantBonusSearches($referrer, 'month', $reward);
+
+        // Unlike coupon redemptions, referral rewards have no PromotionRedemption
+        // row — this is the only durable record that one was granted, needed for
+        // support/debugging since the underlying quota bonus lives in cache.
+        activity('referral')
+            ->performedOn($referrer)
+            ->causedBy($user)
+            ->withProperties([
+                'referred_user_id' => $user->id,
+                'bonus_searches' => $reward,
+            ])
+            ->log('Referral reward granted');
     }
 }

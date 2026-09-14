@@ -44,6 +44,10 @@ class BookingResource extends JsonResource
                 'last_name' => $passenger->last_name,
                 'ticket_number' => $passenger->ticket_number,
             ])),
+            'promotions' => $this->whenLoaded('promotionRedemptions', fn () => $this->promotionRedemptions->map(fn ($redemption) => [
+                'code' => $redemption->promotion->code,
+                'discount' => number_format($redemption->discount_cents / 100, 2),
+            ])),
         ];
     }
 }

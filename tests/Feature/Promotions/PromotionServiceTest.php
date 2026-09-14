@@ -11,6 +11,7 @@ use App\Services\Bookings\BookingService;
 use App\Services\Flights\SearchQuotaService;
 use App\Services\Promotions\PromotionException;
 use App\Services\Promotions\PromotionService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Flights\FakeFlightProvider;
 use Tests\TestCase;
@@ -169,5 +170,55 @@ class PromotionServiceTest extends TestCase
 
         $this->expectException(PromotionException::class);
         app(PromotionService::class)->redeemForBooking($booking, 'BONUS20', $this->user);
+    }
+
+    public function test_a_second_code_cannot_be_stacked_onto_a_booking_that_already_has_one(): void
+    {
+        $this->promotion(['code' => 'SAVE10', 'per_user_limit' => 5]);
+        $this->promotion(['code' => 'SAVE20', 'type' => Promotion::TYPE_PERCENT, 'value' => 20, 'per_user_limit' => 5]);
+        $booking = $this->heldBooking();
+
+        app(PromotionService::class)->redeemForBooking($booking, 'SAVE10', $this->user);
+
+        $this->expectException(PromotionException::class);
+        app(PromotionService::class)->redeemForBooking($booking, 'SAVE20', $this->user);
+    }
+
+    public function test_a_code_with_surrounding_whitespace_still_matches(): void
+    {
+        $this->promotion();
+        $booking = $this->heldBooking();
+
+        app(PromotionService::class)->redeemForBooking($booking, '  SAVE10  ', $this->user);
+
+        $this->assertSame(18000, $booking->fresh()->total_price_cents);
+    }
+
+    public function test_deleting_a_promotion_with_redemptions_is_blocked_to_preserve_the_audit_trail(): void
+    {
+        $promotion = $this->promotion();
+        $booking = $this->heldBooking();
+        app(PromotionService::class)->redeemForBooking($booking, 'SAVE10', $this->user);
+
+        $this->expectException(QueryException::class);
+        $promotion->delete();
+    }
+
+    public function test_confirming_a_referred_users_first_booking_logs_the_referral_reward(): void
+    {
+        $referrer = User::factory()->create();
+        $this->user->forceFill(['referrer_id' => $referrer->id])->save();
+
+        $booking = $this->heldBooking();
+        $booking->transitionTo(Booking::STATUS_PENDING_PAYMENT);
+        $booking->transitionTo(Booking::STATUS_CONFIRMED);
+
+        $this->assertDatabaseHas('activity_log', [
+            'log_name' => 'referral',
+            'subject_type' => User::class,
+            'subject_id' => $referrer->id,
+            'causer_id' => $this->user->id,
+            'description' => 'Referral reward granted',
+        ]);
     }
 }

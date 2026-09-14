@@ -21,7 +21,7 @@ class PromotionController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return (new BookingResource($booking->fresh(['segments', 'passengers'])))->response();
+        return (new BookingResource($booking->fresh(['segments', 'passengers', 'promotionRedemptions.promotion'])))->response();
     }
 
     public function redeem(RedeemPromotionRequest $request, PromotionService $promotions): JsonResponse

@@ -9,6 +9,7 @@ use App\Models\SubscriptionPlan;
 use App\Services\Flights\SearchQuotaService;
 use App\Services\Payments\PaymentException;
 use App\Services\Payments\PaymentService;
+use App\Services\Subscriptions\SubscriptionException;
 use App\Services\Subscriptions\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,12 @@ class SubscriptionController extends Controller
     public function store(SubscribeRequest $request, SubscriptionService $subscriptions, PaymentService $payments): JsonResponse
     {
         $plan = SubscriptionPlan::query()->active()->findOrFail($request->integer('plan_id'));
-        $subscription = $subscriptions->createPendingSubscription($request->user(), $plan);
+
+        try {
+            $subscription = $subscriptions->createPendingSubscription($request->user(), $plan);
+        } catch (SubscriptionException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         try {
             $result = $payments->chargeForPayable(
@@ -69,5 +75,29 @@ class SubscriptionController extends Controller
             'total_spend' => number_format($user->total_spend_cents / 100, 2),
             'search_quota' => $quota->remaining($user),
         ]);
+    }
+
+    /**
+     * Cancels the caller's own currently-active purchased subscription.
+     * Immediate, not end-of-period: access ends now, with no refund for the
+     * unused remainder (see SubscriptionService::cancel()). A spend-based
+     * tier is untouched — it isn't a purchased subscription and can't be
+     * "cancelled".
+     */
+    public function cancel(Request $request, SubscriptionService $subscriptions): JsonResponse
+    {
+        $subscription = $subscriptions->activeSubscription($request->user());
+
+        if (! $subscription) {
+            return response()->json(['message' => 'You have no active subscription to cancel.'], 422);
+        }
+
+        try {
+            $subscriptions->cancel($subscription);
+        } catch (SubscriptionException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['message' => 'Subscription cancelled.']);
     }
 }

@@ -73,6 +73,7 @@ class PromotionResource extends Resource
                         TextInput::make('value')
                             ->numeric()
                             ->minValue(1)
+                            ->maxValue(fn (Get $get): ?int => $get('type') === Promotion::TYPE_PERCENT ? 100 : null)
                             ->required()
                             ->helperText(fn (Get $get) => match ($get('type')) {
                                 Promotion::TYPE_PERCENT => '1-100',
@@ -97,7 +98,7 @@ class PromotionResource extends Resource
 
                     Grid::make(2)->schema([
                         DateTimePicker::make('starts_at')->native(false),
-                        DateTimePicker::make('ends_at')->native(false),
+                        DateTimePicker::make('ends_at')->native(false)->after('starts_at'),
                     ]),
 
                     Toggle::make('is_active')->default(true),
@@ -114,6 +115,10 @@ class PromotionResource extends Resource
                 TextColumn::make('type')->badge(),
                 TextColumn::make('value'),
                 TextColumn::make('redemptions_count')->counts('redemptions')->label('Redeemed'),
+                TextColumn::make('redemptions_sum_discount_cents')
+                    ->sum('redemptions', 'discount_cents')
+                    ->label('Discount given')
+                    ->formatStateUsing(fn (?int $state): string => '$'.number_format(($state ?? 0) / 100, 2)),
                 TextColumn::make('ends_at')->label('Ends')->dateTime('d M Y')->default('—'),
                 IconColumn::make('is_active')->boolean(),
             ])
