@@ -140,8 +140,8 @@ class BookFlight extends Page implements HasForms
             ->statePath('data')
             ->schema([
                 Select::make('customer_id')
-                    ->label('Customer account')
-                    ->helperText('The booking is created under this account; travelers below must belong to it.')
+                    ->label(__('Customer account'))
+                    ->helperText(__('The booking is created under this account; travelers below must belong to it.'))
                     // Searched server-side rather than loading every user into
                     // the option list — that does not scale past a few
                     // thousand accounts.
@@ -166,10 +166,10 @@ class BookFlight extends Page implements HasForms
                     ->afterStateUpdated(fn (Set $set) => $set('passengers', [['traveler_profile_id' => null, 'type' => 'adult']])),
 
                 Repeater::make('passengers')
-                    ->label('Passengers')
+                    ->label(__('Passengers'))
                     ->schema([
                         Select::make('traveler_profile_id')
-                            ->label('Traveler')
+                            ->label(__('Traveler'))
                             ->options(fn (Get $get) => $this->travelerOptions())
                             ->searchable()
                             ->required()
@@ -179,7 +179,7 @@ class BookFlight extends Page implements HasForms
                                 TextInput::make('first_name')->required()->maxLength(255),
                                 TextInput::make('last_name')->required()->maxLength(255),
                                 DatePicker::make('date_of_birth')
-                                    ->label('Date of birth')
+                                    ->label(__('Date of birth'))
                                     ->required()
                                     ->native(false)
                                     ->displayFormat('d/m/Y')
@@ -192,11 +192,11 @@ class BookFlight extends Page implements HasForms
                                 TextInput::make('email')->email()->maxLength(255),
                                 TextInput::make('phone')->tel()->maxLength(30),
                                 TextInput::make('passport_number')
-                                    ->label('Passport number')
+                                    ->label(__('Passport number'))
                                     ->required()
                                     ->maxLength(50),
                                 DatePicker::make('passport_expiry')
-                                    ->label('Passport expiry')
+                                    ->label(__('Passport expiry'))
                                     ->required()
                                     ->native(false)
                                     ->displayFormat('d/m/Y')
@@ -219,7 +219,7 @@ class BookFlight extends Page implements HasForms
                     ->columns(2)
                     ->minItems(1)
                     ->defaultItems(1)
-                    ->addActionLabel('Add passenger'),
+                    ->addActionLabel(__('Add passenger')),
             ]);
     }
 

@@ -68,12 +68,12 @@ class FlightProviderResource extends Resource
                 ->schema([
                     Grid::make(2)->schema([
                         TextInput::make('name')
-                            ->label('Display Name')
+                            ->label(__('Display Name'))
                             ->required()
                             ->maxLength(100),
 
                         TextInput::make('code')
-                            ->label('Code')
+                            ->label(__('Code'))
                             ->required()
                             ->maxLength(50)
                             ->unique(FlightProvider::class, 'code', ignoreRecord: true)
@@ -82,13 +82,13 @@ class FlightProviderResource extends Resource
 
                     Grid::make(2)->schema([
                         Select::make('driver_class')
-                            ->label('Driver')
+                            ->label(__('Driver'))
                             ->options(self::drivers())
                             ->required()
                             ->native(false),
 
                         Select::make('environment')
-                            ->label('Environment')
+                            ->label(__('Environment'))
                             ->options([
                                 'sandbox' => 'Test (sandbox airlines)',
                                 'live' => 'Live / Production',
@@ -99,7 +99,7 @@ class FlightProviderResource extends Resource
                     ]),
 
                     TextInput::make('base_url')
-                        ->label('API Base URL')
+                        ->label(__('API Base URL'))
                         ->url()
                         ->maxLength(255)
                         ->columnSpanFull(),
@@ -109,7 +109,7 @@ class FlightProviderResource extends Resource
                     // Filament resolves nested state on JSON-backed columns
                     // the same way it would a relationship path.
                     TextInput::make('credentials.token')
-                        ->label('API Access Token')
+                        ->label(__('API Access Token'))
                         ->password()
                         ->revealable()
                         ->autocomplete('new-password')
@@ -121,14 +121,14 @@ class FlightProviderResource extends Resource
 
                     Grid::make(2)->schema([
                         TextInput::make('timeout')
-                            ->label('Request Timeout (seconds)')
+                            ->label(__('Request Timeout (seconds)'))
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(120)
                             ->default(30),
 
                         TextInput::make('priority')
-                            ->label('Search Priority')
+                            ->label(__('Search Priority'))
                             ->numeric()
                             ->minValue(0)
                             ->default(0)
@@ -136,7 +136,7 @@ class FlightProviderResource extends Resource
                     ]),
 
                     Toggle::make('is_enabled')
-                        ->label('Enabled')
+                        ->label(__('Enabled'))
                         ->helperText('Only enabled, correctly-configured providers are used for search.'),
                 ]),
         ]);
@@ -159,14 +159,14 @@ class FlightProviderResource extends Resource
                     ->color(fn (string $state) => $state === 'live' ? 'success' : 'warning'),
 
                 IconColumn::make('is_enabled')
-                    ->label('Enabled')
+                    ->label(__('Enabled'))
                     ->boolean(),
 
                 TextColumn::make('priority')
                     ->sortable(),
 
                 TextColumn::make('updated_at')
-                    ->label('Updated')
+                    ->label(__('Updated'))
                     ->dateTime('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

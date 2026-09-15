@@ -133,6 +133,10 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::AUTH_REGISTER_FORM_AFTER,
                 fn () => self::resolveGoogleAuthButton(),
             )
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn () => view('components.language-switcher'),
+            )
             ->authMiddleware([
                 Authenticate::class,
                 RedirectNonAdminsFromDashboard::class,

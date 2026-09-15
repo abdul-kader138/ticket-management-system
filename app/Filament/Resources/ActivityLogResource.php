@@ -46,34 +46,34 @@ class ActivityLogResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('created_at')
-                    ->label('When')
+                    ->label(__('When'))
                     ->dateTime('d M Y H:i:s')
                     ->sortable()
                     ->toggleable(),
 
                 TextColumn::make('log_name')
-                    ->label('Area')
+                    ->label(__('Area'))
                     ->badge()
                     ->sortable(),
 
                 TextColumn::make('description')
-                    ->label('Activity')
+                    ->label(__('Activity'))
                     ->wrap()
                     ->searchable(),
 
                 TextColumn::make('causer.name')
-                    ->label('By')
+                    ->label(__('By'))
                     ->default('System')
                     ->searchable(),
 
                 TextColumn::make('subject_type')
-                    ->label('On')
+                    ->label(__('On'))
                     ->formatStateUsing(fn (?string $state) => $state ? class_basename($state) : '—')
                     ->badge()
                     ->color('gray'),
 
                 TextColumn::make('event')
-                    ->label('Event')
+                    ->label(__('Event'))
                     ->badge()
                     ->color(fn (?string $state) => match ($state) {
                         'created' => 'success',
@@ -85,7 +85,7 @@ class ActivityLogResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('log_name')
-                    ->label('Area')
+                    ->label(__('Area'))
                     ->options(fn () => Activity::query()->distinct()->pluck('log_name', 'log_name')->filter()->all()),
 
                 SelectFilter::make('event')

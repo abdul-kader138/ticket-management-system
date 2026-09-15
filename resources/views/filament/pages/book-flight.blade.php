@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     @php
-        $steps = [1 => 'Review', 2 => 'Passengers', 3 => 'Payment', 4 => 'Done'];
+        $steps = [1 => __('Review'), 2 => __('Passengers'), 3 => __('Payment'), 4 => __('Done')];
 
         // Staff go to the full Bookings resource; a customer (no
         // view_any_booking permission) would 403 there, so send them to
@@ -48,7 +48,7 @@
                 </span>
                 @if($this->describeRequiredPassengers())
                     <span class="rounded bg-primary-100 dark:bg-primary-500/20 px-2 py-1 text-primary-700 dark:text-primary-300">
-                        Priced for {{ $this->describeRequiredPassengers() }}
+                        {{ __('Priced for :passengers', ['passengers' => $this->describeRequiredPassengers()]) }}
                     </span>
                 @endif
                 @if(data_get($offer, 'expires_at'))
@@ -74,7 +74,7 @@
         <form wire:submit="createHold" class="space-y-6">
             @if($this->describeRequiredPassengers())
                 <p class="rounded-lg border border-primary-200 dark:border-primary-500/30 bg-primary-50 dark:bg-primary-500/10 px-3 py-2 text-sm text-primary-800 dark:text-primary-200">
-                    This fare is priced for <strong>{{ $this->describeRequiredPassengers() }}</strong> — the passengers below must match.
+                    {{ __('This fare is priced for :passengers — the passengers below must match.', ['passengers' => $this->describeRequiredPassengers()]) }}
                 </p>
             @endif
 
@@ -129,7 +129,7 @@
         <x-filament::section>
             <div class="flex flex-col items-center gap-3 py-6 text-center">
                 <span class="flex h-12 w-12 items-center justify-center rounded-full bg-success-500 text-white text-2xl">&check;</span>
-                <h3 class="text-lg font-semibold text-gray-950 dark:text-white">Payment received</h3>
+                <h3 class="text-lg font-semibold text-gray-950 dark:text-white">{{ __('Payment received') }}</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">
                     Booking #{{ $b->id }} — status <strong>{{ ucfirst(str_replace('_', ' ', $b->status)) }}</strong>
                     @if($b->pnr) · PNR <strong>{{ $b->pnr }}</strong> @endif

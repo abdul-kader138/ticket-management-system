@@ -119,12 +119,12 @@ class PromotionResource extends Resource
                 TextColumn::make('name')->searchable(),
                 TextColumn::make('type')->badge(),
                 TextColumn::make('value'),
-                TextColumn::make('redemptions_count')->counts('redemptions')->label('Redeemed'),
+                TextColumn::make('redemptions_count')->counts('redemptions')->label(__('Redeemed')),
                 TextColumn::make('redemptions_sum_discount_cents')
                     ->sum('redemptions', 'discount_cents')
-                    ->label('Discount given')
+                    ->label(__('Discount given'))
                     ->formatStateUsing(fn (?int $state): string => '$'.number_format(($state ?? 0) / 100, 2)),
-                TextColumn::make('ends_at')->label('Ends')->dateTime('d M Y')->default('—'),
+                TextColumn::make('ends_at')->label(__('Ends'))->dateTime('d M Y')->default('—'),
                 IconColumn::make('is_active')->boolean(),
             ])
             ->defaultSort('created_at', 'desc')

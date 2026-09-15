@@ -108,24 +108,24 @@ class ChangeBooking extends Page implements HasForms
                     ->default(1),
 
                 Repeater::make('legs')
-                    ->label('New itinerary')
+                    ->label(__('New itinerary'))
                     ->schema([
                         Select::make('from')
-                            ->label('From')
+                            ->label(__('From'))
                             ->required()
                             ->searchable()
                             ->searchPrompt('Type a city or airport')
                             ->getSearchResultsUsing(fn (string $search) => $this->airportOptions($search))
                             ->getOptionLabelUsing(fn ($value) => $value),
                         Select::make('to')
-                            ->label('To')
+                            ->label(__('To'))
                             ->required()
                             ->searchable()
                             ->searchPrompt('Type a city or airport')
                             ->getSearchResultsUsing(fn (string $search) => $this->airportOptions($search))
                             ->getOptionLabelUsing(fn ($value) => $value),
                         DatePicker::make('date')
-                            ->label('Departure date')
+                            ->label(__('Departure date'))
                             ->required()
                             ->native(false)
                             ->displayFormat('d/m/Y')
@@ -136,7 +136,7 @@ class ChangeBooking extends Page implements HasForms
                     ->columns(3)
                     ->minItems(1)
                     ->defaultItems(1)
-                    ->addActionLabel('Add leg'),
+                    ->addActionLabel(__('Add leg')),
             ]);
     }
 

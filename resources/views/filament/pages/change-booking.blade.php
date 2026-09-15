@@ -27,7 +27,7 @@
         <x-filament::section>
             <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
                 <div>
-                    <span class="text-gray-500 dark:text-gray-400">Booking #{{ $b->id }}</span>
+                    <span class="text-gray-500 dark:text-gray-400">{{ __('Booking') }} #{{ $b->id }}</span>
                     @if($b->pnr)<span class="text-gray-500 dark:text-gray-400"> · PNR {{ $b->pnr }}</span>@endif
                 </div>
                 <div class="text-gray-500 dark:text-gray-400">
@@ -133,8 +133,8 @@
         <x-filament::section>
             <div class="flex flex-col items-center gap-3 py-6 text-center">
                 <span class="flex h-12 w-12 items-center justify-center rounded-full bg-success-500 text-white text-2xl">&check;</span>
-                <h3 class="text-lg font-semibold text-gray-950 dark:text-white">Booking changed</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Booking #{{ $this->bookingId }} has been updated.</p>
+                <h3 class="text-lg font-semibold text-gray-950 dark:text-white">{{ __('Booking changed') }}</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Booking #:id has been updated.', ['id' => $this->bookingId]) }}</p>
                 <x-filament::button tag="a"
                     href="{{ $bookingUrl }}">
                     View booking

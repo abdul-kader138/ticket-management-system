@@ -24,7 +24,7 @@
 
     $methodMeta = [
         'stripe' => ['label' => 'Credit or debit card', 'hint' => 'Visa, Mastercard, Amex — entered securely on Stripe', 'icon' => 'heroicon-o-credit-card'],
-        'paypal' => ['label' => 'PayPal', 'hint' => 'Pay with your PayPal balance or a linked card', 'icon' => 'heroicon-o-banknotes'],
+        'paypal' => ['label' => __('PayPal'), 'hint' => __('Pay with your PayPal balance or a linked card'), 'icon' => 'heroicon-o-banknotes'],
     ];
 @endphp
 
@@ -167,13 +167,12 @@
             {{-- ── No gateway configured ─────────────────────────────── --}}
             @if(empty($this->availableGateways))
                 <div class="pcx-warn">
-                    No payment method is available yet. An administrator needs to add Stripe or PayPal
-                    credentials under <strong>System&nbsp;Settings&nbsp;→&nbsp;Payments</strong>.
+                    {{ __('No payment method is available yet. An administrator needs to add Stripe or PayPal credentials under') }} <strong>{{ __('System Settings') }} → {{ __('Payments') }}</strong>.
                 </div>
 
             {{-- ── Choose a method ───────────────────────────────────── --}}
             @elseif(! $this->paymentGateway)
-                <p class="pcx-heading">Choose a payment method</p>
+                    <p class="pcx-heading">{{ __('Choose a payment method') }}</p>
 
                 @foreach($this->availableGateways as $code => $label)
                     @php($meta = $methodMeta[$code] ?? ['label' => $label, 'hint' => '', 'icon' => 'heroicon-o-credit-card'])
@@ -232,7 +231,7 @@
                     }"
                     x-init="mount()"
                 >
-                    <p class="pcx-heading">Card details</p>
+                    <p class="pcx-heading">{{ __('Card details') }}</p>
                     <div class="pcx-frame">
                         <div id="stripe-payment-element"></div>
                         <p class="pcx-note" x-show="! ready" style="text-align:center;padding:1rem 0;">Loading secure card form…</p>
@@ -253,7 +252,7 @@
                 </div>
 
                 <div class="pcx-foot">
-                    <span>Confirmation is automatic. Payment taken but not showing?</span>
+                        <span>{{ __('Confirmation is automatic. Payment taken but not showing?') }}</span>
                     <button type="button" class="pcx-link" wire:click="refreshPaymentStatus"
                             wire:loading.attr="disabled" wire:target="refreshPaymentStatus">Refresh status</button>
                 </div>
@@ -270,8 +269,8 @@
                     <div style="display:flex;align-items:center;gap:0.75rem;">
                         <span class="pcx-ic-tile"><x-filament::icon icon="heroicon-o-banknotes" class="h-5 w-5" /></span>
                         <span>
-                            <span class="pcx-tile__t">Pay with PayPal</span>
-                            <span class="pcx-tile__h">Approve on PayPal, then confirm back here.</span>
+                            <span class="pcx-tile__t">{{ __('Pay with PayPal') }}</span>
+                            <span class="pcx-tile__h">{{ __('Approve on PayPal, then confirm back here.') }}</span>
                         </span>
                     </div>
 

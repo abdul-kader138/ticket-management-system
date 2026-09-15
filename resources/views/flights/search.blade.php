@@ -252,14 +252,16 @@
                                 <div class="w-full">
                                     <label class="block text-xs text-[var(--muted)]">Flight Date</label>
                                     <input
-                                        type="date"
-                                        lang="en-GB"
-                                        :name="'legs[' + idx + '][date]'"
-                                        x-model="leg.date"
-                                        :min="today"
+                                        type="text"
+                                        inputmode="numeric"
+                                        maxlength="10"
+                                        placeholder="dd/mm/yyyy"
+                                        x-model="leg.dateDisplay"
+                                        @input="updateLegDate(leg, $event.target.value)"
                                         required
                                         class="w-full border-0 p-0 mt-0.5 text-sm focus:ring-0"
                                     >
+                                    <input type="hidden" :name="'legs[' + idx + '][date]'" x-model="leg.date">
                                 </div>
 
                                 <button
@@ -453,9 +455,31 @@
         function flightSearch() {
             const today = new Date().toISOString().slice(0, 10);
 
+            const formatDate = (isoDate) => {
+                const [year, month, day] = isoDate.split('-');
+                return `${day}/${month}/${year}`;
+            };
+
+            const parseDate = (displayDate) => {
+                const match = displayDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+                if (! match) {
+                    return '';
+                }
+
+                const [, day, month, year] = match;
+                const date = new Date(`${year}-${month}-${day}T00:00:00`);
+
+                return date.getFullYear() === Number(year)
+                    && date.getMonth() + 1 === Number(month)
+                    && date.getDate() === Number(day)
+                    ? `${year}-${month}-${day}`
+                    : '';
+            };
+
             const makeLeg = () => ({
                 id: Math.random().toString(36).slice(2),
-                from: '', to: '', date: today,
+                from: '', to: '', date: today, dateDisplay: formatDate(today),
                 fromSuggestions: [], toSuggestions: [],
                 fromOpen: false, toOpen: false,
                 fromLoading: false, toLoading: false,
@@ -502,6 +526,10 @@
                 submitting: false,
 
                 init() {},
+
+                updateLegDate(leg, value) {
+                    leg.date = parseDate(value);
+                },
 
                 filteredOptions(field) {
                     const query = (this.dropdownFilter[field.key] || '').trim().toLowerCase();

@@ -56,7 +56,7 @@ class SubscriptionTierRuleResource extends Resource
                             ->helperText('e.g. "Gold Tier" — shown to the customer on their account page.'),
 
                         Select::make('subscription_plan_id')
-                            ->label('Grants the benefits of')
+                            ->label(__('Grants the benefits of'))
                             ->options(fn () => SubscriptionPlan::pluck('name', 'id'))
                             ->searchable()
                             ->required(),
@@ -64,7 +64,7 @@ class SubscriptionTierRuleResource extends Resource
 
                     Grid::make(3)->schema([
                         TextInput::make('min_total_spend_cents')
-                            ->label('Minimum lifetime spend (cents)')
+                            ->label(__('Minimum lifetime spend (cents)'))
                             ->numeric()
                             ->minValue(0)
                             ->default(0)
@@ -72,7 +72,7 @@ class SubscriptionTierRuleResource extends Resource
                             ->helperText('50000 = $500.00'),
 
                         TextInput::make('min_account_age_days')
-                            ->label('Minimum account age (days)')
+                            ->label(__('Minimum account age (days)'))
                             ->numeric()
                             ->minValue(0)
                             ->default(0)
@@ -95,11 +95,11 @@ class SubscriptionTierRuleResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
-                TextColumn::make('subscriptionPlan.name')->label('Grants'),
+                TextColumn::make('subscriptionPlan.name')->label(__('Grants')),
                 TextColumn::make('min_total_spend_cents')
-                    ->label('Min. spend')
+                    ->label(__('Min. spend'))
                     ->formatStateUsing(fn (int $state) => '$'.number_format($state / 100, 2)),
-                TextColumn::make('min_account_age_days')->label('Min. age (days)'),
+                TextColumn::make('min_account_age_days')->label(__('Min. age (days)')),
                 TextColumn::make('priority')->sortable(),
                 IconColumn::make('is_active')->boolean(),
             ])

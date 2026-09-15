@@ -18,7 +18,12 @@ class RevenueChart extends ChartWidget
 {
     use AuthorizesWithShield;
 
-    protected static ?string $heading = 'Gross revenue';
+    protected static ?string $heading = null;
+
+    public function getHeading(): ?string
+    {
+        return __('Gross revenue');
+    }
 
     protected static ?int $sort = 3;
 

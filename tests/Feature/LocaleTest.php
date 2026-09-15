@@ -39,4 +39,15 @@ class LocaleTest extends TestCase
         $this->assertSame('বুকিং', BookingResource::getNavigationLabel());
         $this->assertSame('পেমেন্ট', PaymentResource::getNavigationLabel());
     }
+
+    public function test_authenticated_user_can_change_language_from_the_topbar_action(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('locale.update'), ['locale' => 'it'])
+            ->assertRedirect();
+
+        $this->assertSame('it', $user->fresh()->locale);
+    }
 }

@@ -63,7 +63,7 @@ class SubscriptionPlanResource extends Resource
 
                     Grid::make(3)->schema([
                         TextInput::make('price_cents')
-                            ->label('Price (cents)')
+                            ->label(__('Price (cents)'))
                             ->numeric()
                             ->minValue(0)
                             ->required()
@@ -116,10 +116,10 @@ class SubscriptionPlanResource extends Resource
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('code')->badge(),
                 TextColumn::make('price_cents')
-                    ->label('Price')
+                    ->label(__('Price'))
                     ->formatStateUsing(fn (SubscriptionPlan $record) => "{$record->currency} ".number_format($record->price_cents / 100, 2).' / '.$record->billing_interval),
-                TextColumn::make('daily_search_limit')->label('Daily limit')->formatStateUsing(fn (?int $state) => $state === null ? '—' : ($state === -1 ? 'Unlimited' : $state)),
-                TextColumn::make('monthly_search_limit')->label('Monthly limit')->formatStateUsing(fn (?int $state) => $state === null ? '—' : ($state === -1 ? 'Unlimited' : $state)),
+                TextColumn::make('daily_search_limit')->label(__('Daily limit'))->formatStateUsing(fn (?int $state) => $state === null ? '—' : ($state === -1 ? __('Unlimited') : $state)),
+                TextColumn::make('monthly_search_limit')->label(__('Monthly limit'))->formatStateUsing(fn (?int $state) => $state === null ? '—' : ($state === -1 ? __('Unlimited') : $state)),
                 IconColumn::make('is_active')->boolean(),
             ])
             ->defaultSort('price_cents')

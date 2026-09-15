@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\CustomerGoogleAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\StaffVerifyEmailController;
 use App\Http\Controllers\FlightSearchController;
+use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
 
 // Staff (panel) email verification. No auth middleware on purpose — the
@@ -15,6 +16,8 @@ Route::get('/admin/email/verify/{id}/{hash}', StaffVerifyEmailController::class)
     ->name('staff.verification.verify');
 
 Route::middleware('auth')->group(function () {
+    Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
+
     // The panel-facing "Search Flights" page (App\Filament\Pages\FlightSearch)
     // owns the pretty /flights URL and embeds this route in an iframe so the
     // form/results keep the admin sidebar around them.

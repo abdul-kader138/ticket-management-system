@@ -16,7 +16,12 @@ class BookingsByStatusChart extends ChartWidget
 {
     use AuthorizesWithShield;
 
-    protected static ?string $heading = 'Bookings by status (30 days)';
+    protected static ?string $heading = null;
+
+    public function getHeading(): ?string
+    {
+        return __('Bookings by status (30 days)');
+    }
 
     protected static ?int $sort = 4;
 

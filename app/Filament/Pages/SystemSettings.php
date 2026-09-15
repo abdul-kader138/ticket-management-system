@@ -138,12 +138,12 @@ class SystemSettings extends Page implements HasForms
                                 ->description('Shown in the admin panel header and on the login page.')
                                 ->schema([
                                     TextInput::make('app_name')
-                                        ->label('Application Name')
+                                        ->label(__('Application Name'))
                                         ->required()
                                         ->maxLength(100),
 
                                     TextInput::make('app_tagline')
-                                        ->label('Tagline')
+                                        ->label(__('Tagline'))
                                         ->maxLength(200),
                                 ])->columns(2),
 
@@ -166,7 +166,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('Choose a color scheme for the admin panel. Save and refresh to apply.')
                                 ->schema([
                                     Radio::make('admin_theme')
-                                        ->label('Admin Panel Theme')
+                                        ->label(__('Admin Panel Theme'))
                                         ->helperText('The selected theme applies to all admin panel pages.')
                                         ->options(
                                             collect(AdminPanelProvider::$themes)
@@ -181,7 +181,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('Control the light/dark mode of the admin panel shell.')
                                 ->schema([
                                     Radio::make('admin_panel_theme_mode')
-                                        ->label('Admin Panel Mode')
+                                        ->label(__('Admin Panel Mode'))
                                         ->helperText('Changes take effect after saving and refreshing.')
                                         ->options([
                                             'light' => 'Light',
@@ -208,7 +208,7 @@ class SystemSettings extends Page implements HasForms
                                 ->schema([
                                     Grid::make(3)->schema([
                                         FileUpload::make('app_logo')
-                                            ->label('Application Logo')
+                                            ->label(__('Application Logo'))
                                             ->image()
                                             ->disk('public')
                                             ->directory('branding')
@@ -216,7 +216,7 @@ class SystemSettings extends Page implements HasForms
                                             ->helperText('Shown in the admin panel sidebar header. Leave blank to use the application name as text.'),
 
                                         FileUpload::make('app_icon')
-                                            ->label('App Icon / Favicon')
+                                            ->label(__('App Icon / Favicon'))
                                             ->image()
                                             ->disk('public')
                                             ->directory('branding')
@@ -225,7 +225,7 @@ class SystemSettings extends Page implements HasForms
                                             ->helperText('Browser tab icon.'),
 
                                         FileUpload::make('favicon')
-                                            ->label('Favicon (alternative)')
+                                            ->label(__('Favicon (alternative)'))
                                             ->image()
                                             ->disk('public')
                                             ->directory('branding')
@@ -244,7 +244,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('Applies firm-wide. Individual users still opt in from their own profile page — this is the master switch.')
                                 ->schema([
                                     Toggle::make('two_factor_enabled')
-                                        ->label('Allow two-factor authentication')
+                                        ->label(__('Allow two-factor authentication'))
                                         ->default(true)
                                         ->helperText('Turning this off hides 2FA setup from every profile page and skips the login challenge for everyone, even users who previously enabled it.'),
                                 ]),
@@ -254,11 +254,11 @@ class SystemSettings extends Page implements HasForms
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('google_client_id')
-                                            ->label('Client ID')
+                                            ->label(__('Client ID'))
                                             ->maxLength(255),
 
                                         TextInput::make('google_client_secret')
-                                            ->label('Client Secret')
+                                            ->label(__('Client Secret'))
                                             ->password()
                                             ->revealable()
                                             ->autocomplete('new-password')
@@ -279,19 +279,19 @@ class SystemSettings extends Page implements HasForms
                             Section::make('Sender')->schema([
                                 Grid::make(2)->schema([
                                     TextInput::make('mail_from_name')
-                                        ->label('From Name')
+                                        ->label(__('From Name'))
                                         ->required()
                                         ->maxLength(100),
 
                                     TextInput::make('mail_from_address')
-                                        ->label('From Address')
+                                        ->label(__('From Address'))
                                         ->email()
                                         ->required()
                                         ->maxLength(255),
                                 ]),
 
                                 TextInput::make('staff_notification_email')
-                                    ->label('Staff Notification Email')
+                                    ->label(__('Staff Notification Email'))
                                     ->email()
                                     ->maxLength(255)
                                     ->helperText('Where system alerts are sent. Leave blank to disable.'),
@@ -301,7 +301,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('Store several SMTP providers and switch the active one without re-entering credentials. Leave the active vendor on "Log only" (or give it no host) to keep writing mail to the log. Brevo uses smtp-relay.brevo.com on port 587 with TLS.')
                                 ->schema([
                                     Select::make('mail_active_vendor')
-                                        ->label('Active vendor')
+                                        ->label(__('Active vendor'))
                                         ->options([
                                             'smtp' => 'SMTP',
                                             'brevo' => 'Brevo',
@@ -317,7 +317,7 @@ class SystemSettings extends Page implements HasForms
                                         ->helperText('Only this vendor sends outgoing mail. Its value must match a vendor profile key below.'),
 
                                     Repeater::make('mail_vendors')
-                                        ->label('Vendor profiles')
+                                        ->label(__('Vendor profiles'))
                                         ->schema([
                                             Grid::make(2)->schema([
                                                 TextInput::make('key')
@@ -394,14 +394,14 @@ class SystemSettings extends Page implements HasForms
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('default_daily_search_limit')
-                                            ->label('Searches per day')
+                                            ->label(__('Searches per day'))
                                             ->numeric()
                                             ->minValue(0)
                                             ->default(10)
                                             ->required(),
 
                                         TextInput::make('default_monthly_search_limit')
-                                            ->label('Searches per month')
+                                            ->label(__('Searches per month'))
                                             ->numeric()
                                             ->minValue(0)
                                             ->default(300)
@@ -413,7 +413,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('Granted automatically to the referrer once the person they referred confirms their first booking — see Promotions for admin-issued codes.')
                                 ->schema([
                                     TextInput::make('referral_reward_bonus_searches')
-                                        ->label('Bonus searches per successful referral')
+                                        ->label(__('Bonus searches per successful referral'))
                                         ->numeric()
                                         ->minValue(0)
                                         ->default(20)
@@ -424,7 +424,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('Granted automatically the moment someone registers — no payment, and it never expires on its own (see Subscription Plans). Leave unset to keep new customers on the search limits above until they subscribe themselves.')
                                 ->schema([
                                     Select::make('signup_default_plan_id')
-                                        ->label('Default plan for new signups')
+                                        ->label(__('Default plan for new signups'))
                                         ->options(fn () => SubscriptionPlan::query()->active()->orderBy('price_cents')->pluck('name', 'id'))
                                         ->placeholder('None — no automatic plan')
                                         ->native(false),
@@ -440,11 +440,11 @@ class SystemSettings extends Page implements HasForms
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('stripe_publishable_key')
-                                            ->label('Publishable Key')
+                                            ->label(__('Publishable Key'))
                                             ->maxLength(255),
 
                                         TextInput::make('stripe_secret_key')
-                                            ->label('Secret Key')
+                                            ->label(__('Secret Key'))
                                             ->password()
                                             ->revealable()
                                             ->autocomplete('new-password')
@@ -452,7 +452,7 @@ class SystemSettings extends Page implements HasForms
                                     ]),
 
                                     TextInput::make('stripe_webhook_secret')
-                                        ->label('Webhook Signing Secret')
+                                        ->label(__('Webhook Signing Secret'))
                                         ->password()
                                         ->revealable()
                                         ->autocomplete('new-password')
@@ -469,7 +469,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('Orders v2 (create → customer approves on PayPal → capture). Get credentials from developer.paypal.com → Apps & Credentials, and register a webhook pointing at the URL below.')
                                 ->schema([
                                     Select::make('paypal_mode')
-                                        ->label('Environment')
+                                        ->label(__('Environment'))
                                         ->options(['sandbox' => 'Sandbox', 'live' => 'Live'])
                                         ->default('sandbox')
                                         ->native(false)
@@ -489,7 +489,7 @@ class SystemSettings extends Page implements HasForms
                                     ]),
 
                                     TextInput::make('paypal_webhook_id')
-                                        ->label('Webhook ID')
+                                        ->label(__('Webhook ID'))
                                         ->helperText('From the webhook you register in the PayPal dashboard — required to verify incoming webhook signatures.')
                                         ->maxLength(255)
                                         ->columnSpanFull(),
@@ -504,7 +504,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('When a customer holds a fare but doesn\'t pay, the hold is released automatically after this window — or when the airline\'s fare quote expires, whichever comes first. The sweep runs every minute (bookings:expire-holds).')
                                 ->schema([
                                     TextInput::make('booking_hold_expiry_hours')
-                                        ->label('Hold expiry (hours)')
+                                        ->label(__('Hold expiry (hours)'))
                                         ->numeric()
                                         ->minValue(1)
                                         ->maxValue(720)
@@ -522,13 +522,13 @@ class SystemSettings extends Page implements HasForms
                                 ->description('The version is snapshotted onto every new booking at purchase time (Booking::terms_version) — bumping it here does not change which policy applied to an existing booking.')
                                 ->schema([
                                     TextInput::make('current_terms_version')
-                                        ->label('Current Version')
+                                        ->label(__('Current Version'))
                                         ->default('v1')
                                         ->required()
                                         ->helperText('A short label, e.g. "v1" or "2026-08-25".'),
 
                                     Textarea::make('refund_policy_text')
-                                        ->label('Refund Policy Summary')
+                                        ->label(__('Refund Policy Summary'))
                                         ->rows(4)
                                         ->helperText('Shown to customers at checkout for the version above.'),
                                 ]),
@@ -537,7 +537,7 @@ class SystemSettings extends Page implements HasForms
                                 ->description('How long to keep high-volume operational records with no ongoing value — see App\Console\Commands\PruneRetentionData, run weekly. Bookings, payments and refunds are never pruned by this.')
                                 ->schema([
                                     TextInput::make('data_retention_days')
-                                        ->label('Retention window (days)')
+                                        ->label(__('Retention window (days)'))
                                         ->numeric()
                                         ->minValue(1)
                                         ->default(180)

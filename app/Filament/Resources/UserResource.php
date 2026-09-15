@@ -66,17 +66,17 @@ class UserResource extends Resource
             Section::make('Account')
                 ->schema([
                     TextInput::make('first_name')
-                        ->label('First name')
+                        ->label(__('First name'))
                         ->required()
                         ->maxLength(255),
 
                     TextInput::make('last_name')
-                        ->label('Last name')
+                        ->label(__('Last name'))
                         ->required()
                         ->maxLength(255),
 
                     TextInput::make('email')
-                        ->label('Email')
+                        ->label(__('Email'))
                         ->email()
                         ->required()
                         ->maxLength(255)
@@ -90,7 +90,7 @@ class UserResource extends Resource
                         ->helperText('Leave blank to follow the system default language.'),
 
                     TextInput::make('password')
-                        ->label('Password')
+                        ->label(__('Password'))
                         ->password()
                         ->revealable()
                         ->autocomplete('new-password')
@@ -101,7 +101,7 @@ class UserResource extends Resource
                         ->helperText('At least 8 characters, with uppercase, lowercase, and a number. Leave blank to keep the current password.'),
 
                     TextInput::make('password_confirmation')
-                        ->label('Confirm Password')
+                        ->label(__('Confirm Password'))
                         ->password()
                         ->revealable()
                         ->dehydrated(false)
@@ -117,7 +117,7 @@ class UserResource extends Resource
                     // creation time — an existing user's verification state
                     // is managed by verifying, not by this form.
                     Toggle::make('email_verified_at')
-                        ->label('Email verified')
+                        ->label(__('Email verified'))
                         ->helperText('On: the user can sign in right away. Off: they must verify their email first.')
                         ->default(true)
                         ->visible(fn (string $operation) => $operation === 'create')
@@ -129,7 +129,7 @@ class UserResource extends Resource
                 ->description('What this user can access in the admin panel.')
                 ->schema([
                     Select::make('roles')
-                        ->label('Roles')
+                        ->label(__('Roles'))
                         ->multiple()
                         ->relationship('roles', 'name')
                         ->options(fn () => Role::pluck('name', 'id'))

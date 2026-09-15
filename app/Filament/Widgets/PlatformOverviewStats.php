@@ -47,26 +47,26 @@ class PlatformOverviewStats extends BaseWidget
         $d = Cache::remember('dashboard:platform-overview', now()->addMinute(), fn () => $this->compute());
 
         return [
-            Stat::make('Confirmed bookings', number_format($d['confirmed_this_month']))
-                ->description($this->delta($d['confirmed_this_month'], $d['confirmed_last_month']).' vs last month')
+            Stat::make(__('Confirmed bookings'), number_format($d['confirmed_this_month']))
+                ->description($this->delta($d['confirmed_this_month'], $d['confirmed_last_month']).' '.__('vs last month'))
                 ->descriptionIcon($this->trendIcon($d['confirmed_this_month'], $d['confirmed_last_month']))
                 ->color($this->trendColor($d['confirmed_this_month'], $d['confirmed_last_month']))
                 ->chart($d['confirmed_series']),
 
-            Stat::make('Net revenue', $d['currency'].' '.number_format($d['revenue_this_month'] / 100, 2))
-                ->description($this->delta($d['revenue_this_month'], $d['revenue_last_month'], isMoney: true).' vs last month')
+            Stat::make(__('Net revenue'), $d['currency'].' '.number_format($d['revenue_this_month'] / 100, 2))
+                ->description($this->delta($d['revenue_this_month'], $d['revenue_last_month'], isMoney: true).' '.__('vs last month'))
                 ->descriptionIcon($this->trendIcon($d['revenue_this_month'], $d['revenue_last_month']))
                 ->color($this->trendColor($d['revenue_this_month'], $d['revenue_last_month']))
                 ->chart($d['revenue_series']),
 
-            Stat::make('New customers', number_format($d['customers_this_month']))
-                ->description($this->delta($d['customers_this_month'], $d['customers_last_month']).' vs last month')
+            Stat::make(__('New customers'), number_format($d['customers_this_month']))
+                ->description($this->delta($d['customers_this_month'], $d['customers_last_month']).' '.__('vs last month'))
                 ->descriptionIcon($this->trendIcon($d['customers_this_month'], $d['customers_last_month']))
                 ->color($this->trendColor($d['customers_this_month'], $d['customers_last_month']))
                 ->chart($d['customers_series']),
 
-            Stat::make('Active subscriptions', number_format($d['active_subscriptions']))
-                ->description('Currently paying members')
+            Stat::make(__('Active subscriptions'), number_format($d['active_subscriptions']))
+                ->description(__('Currently paying members'))
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('primary'),
         ];
