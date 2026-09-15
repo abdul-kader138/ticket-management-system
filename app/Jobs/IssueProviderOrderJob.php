@@ -110,12 +110,12 @@ class IssueProviderOrderJob implements ShouldBeUnique, ShouldQueue
 
         User::query()->role('super_admin')->get()->each(function (User $admin) use ($booking) {
             Notification::make()
-                ->title('Ticket issuance failed')
-                ->body("Booking #{$booking->id} was paid but the provider order could not be created after several retries. Manual reconciliation is required.")
+                ->title(__('Ticket issuance failed'))
+                ->body(__('Booking #:id was paid but the provider order could not be created after several retries. Manual reconciliation is required.', ['id' => $booking->id]))
                 ->danger()
                 ->actions([
                     Action::make('view')
-                        ->label('Open booking')
+                    ->label(__('Open booking'))
                         ->url(BookingResource::getUrl('view', ['record' => $booking->id]), shouldOpenInNewTab: true),
                 ])
                 ->sendToDatabase($admin);

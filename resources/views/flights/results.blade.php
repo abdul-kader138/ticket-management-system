@@ -196,7 +196,7 @@
                                 <div class="text-xl font-bold text-[var(--fg)] tabular-nums">
                                     {{ $row['currency'] }} {{ number_format($row['amount'], 2) }}
                                 </div>
-                                <div class="text-[11px] text-[var(--muted)] mb-2">total{{ $travellers > 1 ? ' · '.$row['currency'].' '.number_format($row['amount'] / max(1, $travellers), 2).' pp' : '' }}</div>
+                                <div class="text-[11px] text-[var(--muted)] mb-2">{{ __('total') }}{{ $travellers > 1 ? ' · '.$row['currency'].' '.number_format($row['amount'] / max(1, $travellers), 2).' '.__('pp') : '' }}</div>
 
                                 <div class="flex lg:justify-end flex-wrap gap-1 mb-3">
                                     @if($row['amount'] === $cheapest)

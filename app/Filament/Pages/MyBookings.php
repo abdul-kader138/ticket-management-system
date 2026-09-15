@@ -214,7 +214,7 @@ class MyBookings extends Page implements HasTable
                         $payment = $record->payments()->where('status', Payment::STATUS_PENDING)->latest()->first();
 
                         if (! $payment) {
-                            Notification::make()->warning()->title('No payment in progress to check.')->send();
+                            Notification::make()->warning()->title(__('No payment in progress to check.'))->send();
 
                             return;
                         }
@@ -222,7 +222,7 @@ class MyBookings extends Page implements HasTable
                         try {
                             app(PaymentService::class)->reconcile($payment);
                         } catch (\Throwable $e) {
-                            Notification::make()->danger()->title('Could not check the payment right now.')->send();
+                            Notification::make()->danger()->title(__('Could not check the payment right now.'))->send();
 
                             return;
                         }
@@ -232,9 +232,9 @@ class MyBookings extends Page implements HasTable
                         Notification::make()
                             ->status($status === Booking::STATUS_CONFIRMED ? 'success' : 'info')
                             ->title(match ($status) {
-                                Booking::STATUS_CONFIRMED => 'Payment confirmed — your booking is ticketed.',
-                                Booking::STATUS_HELD => 'That payment didn’t go through. You can try paying again.',
-                                default => 'Still processing — check back in a few minutes.',
+                                Booking::STATUS_CONFIRMED => __('Payment confirmed — your booking is ticketed.'),
+                                Booking::STATUS_HELD => __('That payment didn’t go through. You can try paying again.'),
+                                default => __('Still processing — check back in a few minutes.'),
                             })
                             ->send();
                     }),
@@ -244,7 +244,7 @@ class MyBookings extends Page implements HasTable
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalDescription('Cancelling a confirmed booking may be subject to the fare\'s refund rules.')
+                    ->modalDescription(__('Cancelling a confirmed booking may be subject to the fare\'s refund rules.'))
                     ->visible(fn (Booking $record) => ! in_array($record->status, [
                         Booking::STATUS_CANCELLED, Booking::STATUS_REFUNDED,
                         Booking::STATUS_EXPIRED, Booking::STATUS_PENDING_PAYMENT,
@@ -255,14 +255,14 @@ class MyBookings extends Page implements HasTable
                     ->action(function (Booking $record, array $data) {
                         try {
                             app(CancellationService::class)->cancel($record, 'user', auth()->id(), (string) ($data['reason'] ?? ''));
-                            Notification::make()->success()->title('Booking cancelled')->send();
+                            Notification::make()->success()->title(__('Booking cancelled'))->send();
                         } catch (BookingException $e) {
                             Notification::make()->danger()->title($e->getMessage())->send();
                         }
                     }),
             ])
-            ->emptyStateHeading('No bookings yet')
-            ->emptyStateDescription('Search for a flight and your held and confirmed trips will show up here.')
+            ->emptyStateHeading(__('No bookings yet'))
+            ->emptyStateDescription(__('Search for a flight and your held and confirmed trips will show up here.'))
             ->emptyStateIcon('heroicon-o-ticket');
     }
 }

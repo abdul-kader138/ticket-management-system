@@ -260,7 +260,7 @@ class ChangeBooking extends Page implements HasForms
 
         Notification::make()->success()
             ->title(__('Change applied — fare difference due'))
-            ->body('Collect '.$booking->currency.' '.number_format($payment->amount_cents / 100, 2).' to finish.')
+            ->body(__('Collect :amount to finish.', ['amount' => $booking->currency.' '.number_format($payment->amount_cents / 100, 2)]))
             ->send();
     }
 
@@ -275,7 +275,7 @@ class ChangeBooking extends Page implements HasForms
 
         Notification::make()->success()
             ->title(__('Fare difference paid'))
-            ->body("Booking #{$this->bookingId} change is complete.")
+            ->body(__('Booking #:id change is complete.', ['id' => $this->bookingId]))
             ->send();
     }
 

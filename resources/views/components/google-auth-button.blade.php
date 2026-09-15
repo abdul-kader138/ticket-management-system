@@ -1,7 +1,7 @@
 <div style="display:flex;flex-direction:column;gap:1rem;margin-top:1rem;">
     <div style="display:flex;align-items:center;gap:.75rem;">
         <div style="flex:1;height:1px;background:currentColor;opacity:.1;"></div>
-        <span style="font-size:.75rem;color:rgb(107 114 128);">or</span>
+        <span style="font-size:.75rem;color:rgb(107 114 128);">{{ __('or') }}</span>
         <div style="flex:1;height:1px;background:currentColor;opacity:.1;"></div>
     </div>
 

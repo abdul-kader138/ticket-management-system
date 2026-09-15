@@ -186,7 +186,7 @@ class BookingResource extends Resource
                             ->first();
 
                         if (! $payment) {
-                            Notification::make()->warning()->title('No pending payment to check.')->send();
+                            Notification::make()->warning()->title(__('No pending payment to check.'))->send();
 
                             return;
                         }
@@ -194,7 +194,7 @@ class BookingResource extends Resource
                         try {
                             app(PaymentService::class)->reconcile($payment);
                         } catch (\Throwable $e) {
-                            Notification::make()->danger()->title('Could not check payment')->body($e->getMessage())->send();
+                            Notification::make()->danger()->title(__('Could not check payment'))->body($e->getMessage())->send();
 
                             return;
                         }
@@ -203,7 +203,7 @@ class BookingResource extends Resource
 
                         Notification::make()
                             ->status($status === Booking::STATUS_CONFIRMED ? 'success' : 'info')
-                            ->title('Booking is now: '.ucfirst(str_replace('_', ' ', $status)))
+                            ->title(__('Booking is now:').' '.__(ucfirst(str_replace('_', ' ', $status))))
                             ->send();
                     }),
 
@@ -232,7 +232,7 @@ class BookingResource extends Resource
                     ->action(function (Booking $record, array $data) {
                         try {
                             app(CancellationService::class)->cancel($record, 'admin', auth()->id(), $data['reason']);
-                            Notification::make()->success()->title('Booking cancelled')->send();
+                            Notification::make()->success()->title(__('Booking cancelled'))->send();
                         } catch (BookingException $e) {
                             Notification::make()->danger()->title($e->getMessage())->send();
                         }
@@ -264,7 +264,7 @@ class BookingResource extends Resource
 
                         try {
                             app(PaymentService::class)->refund($payment, (int) round($data['amount'] * 100), $data['reason']);
-                            Notification::make()->success()->title('Refund issued')->send();
+                            Notification::make()->success()->title(__('Refund issued'))->send();
                         } catch (PaymentException $e) {
                             Notification::make()->danger()->title($e->getMessage())->send();
                         }

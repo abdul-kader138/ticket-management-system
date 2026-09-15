@@ -7,7 +7,7 @@
         @forelse ($codes as $code)
             <span>{{ $code }}</span>
         @empty
-            <span class="col-span-2 text-gray-400">No recovery codes available.</span>
+            <span class="col-span-2 text-gray-400">{{ __('No recovery codes available.') }}</span>
         @endforelse
     </div>
 </div>

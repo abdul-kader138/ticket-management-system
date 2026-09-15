@@ -84,14 +84,14 @@ class BookFlight extends Page implements HasForms
             );
 
             if (! $booking->isHeld()) {
-                Notification::make()->warning()->title('That booking is not awaiting payment.')->send();
+                Notification::make()->warning()->title(__('That booking is not awaiting payment.'))->send();
                 $this->redirect(BookingResource::getUrl('view', ['record' => $booking->id]));
 
                 return;
             }
 
             if ($booking->hasExpired()) {
-                Notification::make()->danger()->title('This booking hold has expired.')->send();
+                Notification::make()->danger()->title(__('This booking hold has expired.'))->send();
                 $this->redirect(BookingResource::getUrl('view', ['record' => $booking->id]));
 
                 return;
@@ -113,7 +113,7 @@ class BookFlight extends Page implements HasForms
         $providerModel = FlightProvider::query()->enabled()->where('code', $this->provider)->first();
 
         if (! $providerModel) {
-            Notification::make()->danger()->title('That flight provider is not available.')->send();
+            Notification::make()->danger()->title(__('That flight provider is not available.'))->send();
             $this->redirect(FlightSearch::getUrl());
 
             return;
@@ -122,7 +122,7 @@ class BookFlight extends Page implements HasForms
         try {
             $this->offer = app(FlightProviderManager::class)->driver($providerModel)->getOffer($this->offerId)->raw;
         } catch (DuffelApiException $e) {
-            Notification::make()->danger()->title('Could not load that offer')->body($e->getMessage())->send();
+            Notification::make()->danger()->title(__('Could not load that offer'))->body($e->getMessage())->send();
             $this->redirect(FlightSearch::getUrl());
 
             return;
@@ -174,8 +174,8 @@ class BookFlight extends Page implements HasForms
                             ->searchable()
                             ->required()
                             ->createOptionForm([
-                                Select::make('title')->options(['mr' => 'Mr', 'mrs' => 'Mrs', 'ms' => 'Ms', 'mx' => 'Mx']),
-                                Select::make('gender')->options(['m' => 'Male', 'f' => 'Female', 'x' => 'Unspecified']),
+                                Select::make('title')->label(__('Title'))->options(['mr' => __('Mr'), 'mrs' => __('Mrs'), 'ms' => __('Ms'), 'mx' => __('Mx')]),
+                                Select::make('gender')->label(__('Gender'))->options(['m' => __('Male'), 'f' => __('Female'), 'x' => __('Unspecified')]),
                                 TextInput::make('first_name')->required()->maxLength(255),
                                 TextInput::make('last_name')->required()->maxLength(255),
                                 DatePicker::make('date_of_birth')
@@ -188,7 +188,7 @@ class BookFlight extends Page implements HasForms
                                     ->minDate(now()->subYears(120)->startOfDay())
                                     ->maxDate(today()->subDay())
                                     ->rules(['before:today']),
-                                TextInput::make('nationality')->length(2)->placeholder('GB'),
+                                TextInput::make('nationality')->label(__('Nationality'))->length(2)->placeholder(__('Country code')),
                                 TextInput::make('email')->email()->maxLength(255),
                                 TextInput::make('phone')->tel()->maxLength(30),
                                 TextInput::make('passport_number')
@@ -212,7 +212,8 @@ class BookFlight extends Page implements HasForms
                             ])->getKey()),
 
                         Select::make('type')
-                            ->options(['adult' => 'Adult', 'child' => 'Child', 'infant' => 'Infant'])
+                            ->label(__('Passenger type'))
+                            ->options(['adult' => __('Adult'), 'child' => __('Child'), 'infant' => __('Infant')])
                             ->default('adult')
                             ->required(),
                     ])
@@ -287,7 +288,7 @@ class BookFlight extends Page implements HasForms
         $customer = User::find($state['customer_id']);
 
         if (! $customer) {
-            Notification::make()->danger()->title('Pick a customer account first.')->send();
+            Notification::make()->danger()->title(__('Pick a customer account first.'))->send();
 
             return;
         }
@@ -302,7 +303,7 @@ class BookFlight extends Page implements HasForms
             ->all();
 
         if ($passengers === []) {
-            Notification::make()->danger()->title('Add at least one passenger.')->send();
+            Notification::make()->danger()->title(__('Add at least one passenger.'))->send();
 
             return;
         }
@@ -314,8 +315,8 @@ class BookFlight extends Page implements HasForms
 
             if ($selected != $required) {
                 Notification::make()->danger()
-                    ->title('Passengers don’t match this fare')
-                    ->body('This offer is priced for '.$this->describeRequiredPassengers().'. Adjust the passengers to match, or start a new search.')
+                    ->title(__('Passengers don’t match this fare'))
+                    ->body(__('This offer is priced for :passengers. Adjust the passengers to match, or start a new search.', ['passengers' => $this->describeRequiredPassengers()]))
                     ->send();
 
                 return;
@@ -330,7 +331,7 @@ class BookFlight extends Page implements HasForms
                 $passengers,
             );
         } catch (BookingException|DuffelApiException $e) {
-            Notification::make()->danger()->title('Could not hold this flight')->body($e->getMessage())->send();
+            Notification::make()->danger()->title(__('Could not hold this flight'))->body($e->getMessage())->send();
 
             return;
         }
@@ -340,8 +341,8 @@ class BookFlight extends Page implements HasForms
 
         Notification::make()
             ->success()
-            ->title("Flight held — booking #{$booking->id}")
-            ->body('Hold expires '.($booking->expires_at?->format('d M H:i') ?? 'soon').'. Take payment to confirm it.')
+            ->title(__('Flight held — booking #:id', ['id' => $booking->id]))
+            ->body(__('Hold expires :date. Take payment to confirm it.', ['date' => $booking->expires_at?->format('d M H:i') ?? __('soon')]))
             ->send();
     }
 
@@ -367,7 +368,7 @@ class BookFlight extends Page implements HasForms
         try {
             $result = app(PaymentService::class)->initiate($booking, $gateway);
         } catch (PaymentException $e) {
-            Notification::make()->danger()->title('Payment could not start')->body($e->getMessage())->send();
+            Notification::make()->danger()->title(__('Payment could not start'))->body($e->getMessage())->send();
 
             return;
         }
@@ -388,18 +389,18 @@ class BookFlight extends Page implements HasForms
 
         Notification::make()
             ->success()
-            ->title('Payment received')
+            ->title(__('Payment received'))
             ->body($booking && $booking->status === Booking::STATUS_CONFIRMED
-                ? "Booking #{$booking->id} is confirmed."
-                : "Booking #{$booking?->id} is being ticketed with the provider.")
+                ? __('Booking #:id is confirmed.', ['id' => $booking->id])
+                : __('Booking #:id is being ticketed with the provider.', ['id' => $booking?->id]))
             ->send();
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            FlightSearch::getUrl() => 'Search Flights',
-            '#' => 'Book',
+            FlightSearch::getUrl() => __('Search Flights'),
+            '#' => __('Book'),
         ];
     }
 }

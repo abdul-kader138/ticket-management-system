@@ -75,7 +75,7 @@ trait HandlesPaymentStep
         try {
             $result = app(PaymentService::class)->capturePayPalOrder($payment);
         } catch (\Throwable $e) {
-            Notification::make()->danger()->title('PayPal capture failed')->body($e->getMessage())->send();
+            Notification::make()->danger()->title(__('PayPal capture failed'))->body($e->getMessage())->send();
 
             return;
         }
@@ -100,7 +100,7 @@ trait HandlesPaymentStep
         try {
             app(PaymentService::class)->reconcile($payment);
         } catch (\Throwable $e) {
-            Notification::make()->warning()->title('Could not check payment')->body($e->getMessage())->send();
+            Notification::make()->warning()->title(__('Could not check payment'))->body($e->getMessage())->send();
 
             return;
         }

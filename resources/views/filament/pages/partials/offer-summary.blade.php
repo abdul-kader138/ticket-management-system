@@ -23,7 +23,7 @@
         </div>
         <div class="text-right">
             <div class="text-lg font-bold text-gray-950 dark:text-white tabular-nums">{{ $currency }} {{ number_format($amount, 2) }}</div>
-            <div class="text-xs text-gray-400">total</div>
+            <div class="text-xs text-gray-400">{{ __('total') }}</div>
         </div>
     </div>
 

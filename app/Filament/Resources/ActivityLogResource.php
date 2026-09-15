@@ -68,12 +68,13 @@ class ActivityLogResource extends Resource
 
                 TextColumn::make('description')
                     ->label(__('Activity'))
+                    ->formatStateUsing(fn (?string $state) => $state ? __(ucfirst($state)) : '—')
                     ->wrap()
                     ->searchable(),
 
                 TextColumn::make('causer.name')
                     ->label(__('By'))
-                    ->default('System')
+                    ->default(__('System'))
                     ->searchable(),
 
                 TextColumn::make('subject_type')
@@ -84,6 +85,7 @@ class ActivityLogResource extends Resource
 
                 TextColumn::make('event')
                     ->label(__('Event'))
+                    ->formatStateUsing(fn (?string $state) => $state ? __(ucfirst($state)) : '—')
                     ->badge()
                     ->color(fn (?string $state) => match ($state) {
                         'created' => 'success',
@@ -99,20 +101,23 @@ class ActivityLogResource extends Resource
                     ->options(fn () => Activity::query()->distinct()->pluck('log_name', 'log_name')->filter()->all()),
 
                 SelectFilter::make('event')
+                    ->label(__('Event'))
                     ->options([
-                        'created' => 'Created',
-                        'updated' => 'Updated',
-                        'deleted' => 'Deleted',
+                        'created' => __('Created'),
+                        'updated' => __('Updated'),
+                        'deleted' => __('Deleted'),
                     ]),
 
                 Filter::make('created_at')
                     ->form([
                         DatePicker::make('from')
+                            ->label(__('From'))
                             ->native(false)
                             ->displayFormat('d/m/Y')
                             ->format('Y-m-d')
                             ->placeholder('dd/mm/yyyy'),
                         DatePicker::make('until')
+                            ->label(__('To'))
                             ->native(false)
                             ->displayFormat('d/m/Y')
                             ->format('Y-m-d')

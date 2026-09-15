@@ -42,11 +42,12 @@ class ViewActivityLog extends ViewRecord
 
                     TextEntry::make('description')
                         ->label(__('Activity'))
+                        ->formatStateUsing(fn (?string $state) => $state ? __(ucfirst($state)) : '—')
                         ->columnSpanFull(),
 
                     TextEntry::make('causer.name')
                         ->label(__('Performed by'))
-                        ->default('System'),
+                        ->default(__('System')),
 
                     TextEntry::make('subject_type')
                         ->label(__('On'))

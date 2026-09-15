@@ -144,9 +144,9 @@
                                             role="listbox"
                                             class="absolute z-30 top-full left-0 right-0 mt-1 min-w-[16rem] max-h-64 overflow-y-auto bg-[var(--card)] border border-[var(--card-border)] rounded-md shadow-lg text-left"
                                         >
-                                            <div x-show="leg.fromLoading" class="px-3 py-3 text-sm text-[var(--muted)]">Searching…</div>
+                                            <div x-show="leg.fromLoading" class="px-3 py-3 text-sm text-[var(--muted)]">{{ __('Searching…') }}</div>
                                             <template x-if="!leg.fromLoading && leg.fromSearched && !leg.fromSuggestions.length">
-                                                <div class="px-3 py-3 text-sm text-[var(--muted)]">No airports found.</div>
+                                                <div class="px-3 py-3 text-sm text-[var(--muted)]">{{ __('No airports found.') }}</div>
                                             </template>
                                             <template x-for="(place, i) in leg.fromSuggestions" :key="place.id ?? place.iata_code">
                                                 <button
@@ -223,9 +223,9 @@
                                             role="listbox"
                                             class="absolute z-30 top-full left-0 right-0 mt-1 min-w-[16rem] max-h-64 overflow-y-auto bg-[var(--card)] border border-[var(--card-border)] rounded-md shadow-lg text-left"
                                         >
-                                            <div x-show="leg.toLoading" class="px-3 py-3 text-sm text-[var(--muted)]">Searching…</div>
+                                            <div x-show="leg.toLoading" class="px-3 py-3 text-sm text-[var(--muted)]">{{ __('Searching…') }}</div>
                                             <template x-if="!leg.toLoading && leg.toSearched && !leg.toSuggestions.length">
-                                                <div class="px-3 py-3 text-sm text-[var(--muted)]">No airports found.</div>
+                                                <div class="px-3 py-3 text-sm text-[var(--muted)]">{{ __('No airports found.') }}</div>
                                             </template>
                                             <template x-for="(place, i) in leg.toSuggestions" :key="place.id ?? place.iata_code">
                                                 <button

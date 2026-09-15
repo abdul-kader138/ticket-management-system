@@ -192,9 +192,9 @@
 
                 <p class="pcx-note" style="display:flex;align-items:center;gap:0.35rem;margin-top:0.9rem;">
                     <x-filament::icon icon="heroicon-o-lock-closed" class="h-4 w-4" />
-                    Processed by Stripe and PayPal. Card details never reach our servers.
+                    {{ __('Processed by Stripe and PayPal. Card details never reach our servers.') }}
                 </p>
-                <p class="pcx-note" wire:loading wire:target="startPayment">Setting up secure checkout…</p>
+                <p class="pcx-note" wire:loading wire:target="startPayment">{{ __('Setting up secure checkout…') }}</p>
 
             {{-- ── Stripe Payment Element ────────────────────────────── --}}
             @elseif($this->paymentGateway === 'stripe' && ! empty($this->paymentClientData['client_secret']))
@@ -234,7 +234,7 @@
                     <p class="pcx-heading">{{ __('Card details') }}</p>
                     <div class="pcx-frame">
                         <div id="stripe-payment-element"></div>
-                        <p class="pcx-note" x-show="! ready" style="text-align:center;padding:1rem 0;">Loading secure card form…</p>
+                        <p class="pcx-note" x-show="! ready" style="text-align:center;padding:1rem 0;">{{ __('Loading secure card form…') }}</p>
                     </div>
 
                     <p class="pcx-msg" x-show="message"
@@ -254,7 +254,7 @@
                 <div class="pcx-foot">
                         <span>{{ __('Confirmation is automatic. Payment taken but not showing?') }}</span>
                     <button type="button" class="pcx-link" wire:click="refreshPaymentStatus"
-                            wire:loading.attr="disabled" wire:target="refreshPaymentStatus">Refresh status</button>
+                            wire:loading.attr="disabled" wire:target="refreshPaymentStatus">{{ __('Refresh status') }}</button>
                 </div>
 
                 @if(! app()->isProduction())
@@ -276,13 +276,13 @@
 
                     <a class="pcx-paypal" href="{{ $this->paymentClientData['approval_url'] }}" target="_blank" rel="noopener">
                         <x-filament::icon icon="heroicon-o-arrow-top-right-on-square" class="h-4 w-4" />
-                        Continue to PayPal
+                        {{ __('Continue to PayPal') }}
                     </a>
 
                     <button type="button" class="pcx-paypal-confirm" wire:click="capturePaypal"
                             wire:loading.attr="disabled" wire:target="capturePaypal">
-                        <span wire:loading.remove wire:target="capturePaypal">I’ve approved — confirm payment</span>
-                        <span wire:loading wire:target="capturePaypal">Confirming…</span>
+                        <span wire:loading.remove wire:target="capturePaypal">{{ __('I’ve approved — confirm payment') }}</span>
+                        <span wire:loading wire:target="capturePaypal">{{ __('Confirming…') }}</span>
                     </button>
                 </div>
 
@@ -290,10 +290,10 @@
             @else
                 <div class="pcx-frame">
                     <p style="font-size:0.875rem;color:rgb(var(--gray-600));">
-                        Payment started with <strong>{{ ucfirst((string) $this->paymentGateway) }}</strong>. Waiting for confirmation.
+                        {{ __('Payment started with :gateway. Waiting for confirmation.', ['gateway' => ucfirst((string) $this->paymentGateway)]) }}
                     </p>
                     <button type="button" class="pcx-link" style="margin-top:0.6rem;" wire:click="refreshPaymentStatus"
-                            wire:loading.attr="disabled" wire:target="refreshPaymentStatus">Refresh status</button>
+                            wire:loading.attr="disabled" wire:target="refreshPaymentStatus">{{ __('Refresh status') }}</button>
                 </div>
             @endif
         </div>
