@@ -40,6 +40,16 @@ class PromotionResource extends Resource
         return __('Promotions');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('Promotion');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Promotions');
+    }
+
     protected static ?int $navigationSort = 30;
 
     public static function getNavigationGroup(): ?string
@@ -50,7 +60,7 @@ class PromotionResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Promotion')
+            Section::make(__('Promotion'))
                 ->schema([
                     Grid::make(2)->schema([
                         TextInput::make('name')
@@ -115,17 +125,17 @@ class PromotionResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('code')->badge()->searchable(),
-                TextColumn::make('name')->searchable(),
-                TextColumn::make('type')->badge(),
-                TextColumn::make('value'),
+                TextColumn::make('code')->label(__('Code'))->badge()->searchable(),
+                TextColumn::make('name')->label(__('Name'))->searchable(),
+                TextColumn::make('type')->label(__('Type'))->badge(),
+                TextColumn::make('value')->label(__('Value')),
                 TextColumn::make('redemptions_count')->counts('redemptions')->label(__('Redeemed')),
                 TextColumn::make('redemptions_sum_discount_cents')
                     ->sum('redemptions', 'discount_cents')
                     ->label(__('Discount given'))
                     ->formatStateUsing(fn (?int $state): string => '$'.number_format(($state ?? 0) / 100, 2)),
                 TextColumn::make('ends_at')->label(__('Ends'))->dateTime('d M Y')->default('—'),
-                IconColumn::make('is_active')->boolean(),
+                IconColumn::make('is_active')->label(__('Is active'))->boolean(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([

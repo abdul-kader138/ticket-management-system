@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'column.name' => 'নাম',
+    'column.guard_name' => 'গার্ডের নাম',
+    'column.team' => 'টিম',
+    'column.roles' => 'ভূমিকা',
+    'column.permissions' => 'অনুমতি',
+    'column.updated_at' => 'আপডেট হয়েছে',
+    'field.name' => 'নাম',
+    'field.guard_name' => 'গার্ডের নাম',
+    'field.permissions' => 'অনুমতি',
+    'field.team' => 'টিম',
+    'field.team.placeholder' => 'একটি টিম নির্বাচন করুন ...',
+    'field.select_all.name' => 'সব নির্বাচন করুন',
+    'field.select_all.message' => 'এই ভূমিকার সব অনুমতি সক্রিয়/নিষ্ক্রিয় করে',
+    'nav.group' => 'ফিলামেন্ট শিল্ড',
+    'nav.role.label' => 'ভূমিকা',
+    'resource.label.role' => 'ভূমিকা',
+    'resource.label.roles' => 'ভূমিকা',
+    'section' => 'সত্তা',
+    'resources' => 'রিসোর্স',
+    'widgets' => 'উইজেট',
+    'pages' => 'পেজ',
+    'custom' => 'কাস্টম অনুমতি',
+];

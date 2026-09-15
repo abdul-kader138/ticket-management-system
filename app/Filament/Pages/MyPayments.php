@@ -64,10 +64,10 @@ class MyPayments extends Page implements HasTable
                 ->with(['payable', 'refunds']))
             ->defaultSort('created_at', 'desc')
             ->columns([
-                TextColumn::make('id')->label('Ref')->prefix('#')->sortable(),
+                TextColumn::make('id')->label(__('Ref'))->prefix('#')->sortable(),
 
                 TextColumn::make('payable')
-                    ->label('For')
+                    ->label(__('For'))
                     ->getStateUsing(fn (Payment $record) => match (true) {
                         $record->payable instanceof Booking => 'Booking #'.$record->payable->id,
                         $record->payable_type === UserSubscription::class => 'Subscription',
@@ -75,15 +75,16 @@ class MyPayments extends Page implements HasTable
                     }),
 
                 TextColumn::make('gateway')
+                    ->label(__('Gateway'))
                     ->badge()
                     ->formatStateUsing(fn (string $state) => ucfirst($state)),
 
                 TextColumn::make('amount_cents')
-                    ->label('Amount')
+                    ->label(__('Amount'))
                     ->formatStateUsing(fn (Payment $record) => "{$record->currency} ".number_format($record->amount_cents / 100, 2)),
 
                 TextColumn::make('refunded')
-                    ->label('Refunded')
+                    ->label(__('Refunded'))
                     ->getStateUsing(function (Payment $record) {
                         // Sum the already-eager-loaded refunds collection —
                         // Payment::totalRefundedCents() would fire a query per row.
@@ -94,7 +95,7 @@ class MyPayments extends Page implements HasTable
                         return $cents > 0 ? "{$record->currency} ".number_format($cents / 100, 2) : '—';
                     }),
 
-                TextColumn::make('status')
+                TextColumn::make('status')->label(__('Status'))
                     ->badge()
                     ->formatStateUsing(fn (string $state) => ucfirst(str_replace('_', ' ', $state)))
                     ->color(fn (string $state) => match ($state) {
@@ -104,21 +105,21 @@ class MyPayments extends Page implements HasTable
                         default => 'gray',
                     }),
 
-                TextColumn::make('created_at')->label('Date')->dateTime('d/m/Y H:i')->sortable(),
+                TextColumn::make('created_at')->label(__('Date'))->dateTime('d/m/Y H:i')->sortable(),
             ])
             ->filters([
                 SelectFilter::make('gateway')->options(['stripe' => 'Stripe', 'paypal' => 'PayPal']),
                 SelectFilter::make('status')->options([
-                    Payment::STATUS_PENDING => 'Pending',
-                    Payment::STATUS_SUCCEEDED => 'Succeeded',
-                    Payment::STATUS_FAILED => 'Failed',
-                    Payment::STATUS_REFUNDED => 'Refunded',
-                    Payment::STATUS_PARTIALLY_REFUNDED => 'Partially refunded',
+                    Payment::STATUS_PENDING => __('Pending'),
+                    Payment::STATUS_SUCCEEDED => __('Succeeded'),
+                    Payment::STATUS_FAILED => __('Failed'),
+                    Payment::STATUS_REFUNDED => __('Refunded'),
+                    Payment::STATUS_PARTIALLY_REFUNDED => __('Partially refunded'),
                 ]),
             ])
             ->actions([
                 ViewAction::make()
-                    ->modalHeading(fn (Payment $record) => "Payment #{$record->id}")
+                    ->modalHeading(fn (Payment $record) => __('Payment #:id', ['id' => $record->id]))
                     ->infolist([
                         Section::make()
                             ->columns(3)
@@ -126,28 +127,35 @@ class MyPayments extends Page implements HasTable
                                 TextEntry::make('gateway')->formatStateUsing(fn (string $s) => ucfirst($s)),
                                 TextEntry::make('status')
                                     ->badge()
-                                    ->formatStateUsing(fn (string $s) => ucfirst(str_replace('_', ' ', $s))),
+                                    ->formatStateUsing(fn (string $s) => __(match ($s) {
+                                        Payment::STATUS_PENDING => 'Pending',
+                                        Payment::STATUS_SUCCEEDED => 'Succeeded',
+                                        Payment::STATUS_FAILED => 'Failed',
+                                        Payment::STATUS_REFUNDED => 'Refunded',
+                                        Payment::STATUS_PARTIALLY_REFUNDED => 'Partially Refunded',
+                                        default => ucfirst(str_replace('_', ' ', $s)),
+                                    })),
                                 TextEntry::make('amount_cents')
-                                    ->label('Amount')
+                                    ->label(__('Amount'))
                                     ->formatStateUsing(fn (Payment $r) => "{$r->currency} ".number_format($r->amount_cents / 100, 2)),
-                                TextEntry::make('gateway_reference')->label('Gateway reference')->placeholder('—')->copyable(),
-                                TextEntry::make('created_at')->label('Paid on')->dateTime('d/m/Y H:i'),
+                                TextEntry::make('gateway_reference')->label(__('Gateway reference'))->placeholder('—')->copyable(),
+                                TextEntry::make('created_at')->label(__('Paid on'))->dateTime('d/m/Y H:i'),
                                 TextEntry::make('payable')
-                                    ->label('For')
-                                    ->state(fn (Payment $r) => $r->payable instanceof Booking ? "Booking #{$r->payable->id}" : 'Subscription'),
+                                    ->label(__('For'))
+                                    ->state(fn (Payment $r) => $r->payable instanceof Booking ? __('Booking #:id', ['id' => $r->payable->id]) : __('Subscription')),
                             ]),
 
-                        Section::make('Refunds')
+                        Section::make(__('Refunds'))
                             ->schema([
                                 RepeatableEntry::make('refunds')
                                     ->label('')
                                     ->schema([
                                         TextEntry::make('amount_cents')
-                                            ->label('Amount')
+                                            ->label(__('Amount'))
                                             ->formatStateUsing(fn ($state, $record) => "{$record->currency} ".number_format($state / 100, 2)),
                                         TextEntry::make('reason')->placeholder('—'),
                                         TextEntry::make('status')->badge(),
-                                        TextEntry::make('created_at')->label('Date')->dateTime('d/m/Y H:i'),
+                                        TextEntry::make('created_at')->label(__('Date'))->dateTime('d/m/Y H:i'),
                                     ])
                                     ->columns(4),
                             ])
@@ -155,13 +163,13 @@ class MyPayments extends Page implements HasTable
                     ]),
 
                 Action::make('downloadReceipt')
-                    ->label('Download receipt')
+                    ->label(__('Download receipt'))
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('gray')
                     ->action(fn (Payment $record) => app(ReceiptPdfService::class)->payment($record)),
 
                 Action::make('viewBooking')
-                    ->label('View booking')
+                    ->label(__('View booking'))
                     ->icon('heroicon-o-ticket')
                     ->color('gray')
                     ->visible(fn (Payment $record) => $record->payable instanceof Booking)

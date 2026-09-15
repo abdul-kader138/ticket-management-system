@@ -37,6 +37,16 @@ class SubscriptionTierRuleResource extends Resource
         return __('Subscription Tier Rules');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('Subscription Tier Rule');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Subscription Tier Rules');
+    }
+
     protected static ?int $navigationSort = 20;
 
     public static function getNavigationGroup(): ?string
@@ -47,13 +57,14 @@ class SubscriptionTierRuleResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Tier Rule')
+            Section::make(__('Tier Rule'))
                 ->schema([
                     Grid::make(2)->schema([
                         TextInput::make('name')
+                            ->label(__('Name'))
                             ->required()
                             ->maxLength(100)
-                            ->helperText('e.g. "Gold Tier" — shown to the customer on their account page.'),
+                            ->helperText(__('e.g. "Gold Tier" — shown to the customer on their account page.')),
 
                         Select::make('subscription_plan_id')
                             ->label(__('Grants the benefits of'))
@@ -79,13 +90,14 @@ class SubscriptionTierRuleResource extends Resource
                             ->required(),
 
                         TextInput::make('priority')
+                            ->label(__('Priority'))
                             ->numeric()
                             ->default(0)
                             ->required()
-                            ->helperText('Higher wins when more than one rule qualifies.'),
+                            ->helperText(__('Higher wins when more than one rule qualifies.')),
                     ]),
 
-                    Toggle::make('is_active')->default(true),
+                    Toggle::make('is_active')->label(__('Is active'))->default(true),
                 ]),
         ]);
     }
@@ -94,17 +106,20 @@ class SubscriptionTierRuleResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')->searchable()->sortable(),
+                TextColumn::make('name')->label(__('Name'))->searchable()->sortable(),
                 TextColumn::make('subscriptionPlan.name')->label(__('Grants')),
                 TextColumn::make('min_total_spend_cents')
                     ->label(__('Min. spend'))
                     ->formatStateUsing(fn (int $state) => '$'.number_format($state / 100, 2)),
                 TextColumn::make('min_account_age_days')->label(__('Min. age (days)')),
-                TextColumn::make('priority')->sortable(),
-                IconColumn::make('is_active')->boolean(),
+                TextColumn::make('priority')->label(__('Priority'))->sortable(),
+                IconColumn::make('is_active')->label(__('Is active'))->boolean(),
             ])
             ->defaultSort('priority', 'desc')
-            ->actions([EditAction::make(), DeleteAction::make()])
+            ->actions([
+                EditAction::make()->label(__('Edit')),
+                DeleteAction::make()->label(__('Delete')),
+            ])
             ->bulkActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
     }
 

@@ -32,6 +32,16 @@ class ActivityLogResource extends Resource
         return __('Audit Log');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('Audit Log Entry');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Audit Log');
+    }
+
     protected static ?string $modelLabel = 'Audit Log Entry';
 
     protected static ?int $navigationSort = 30;

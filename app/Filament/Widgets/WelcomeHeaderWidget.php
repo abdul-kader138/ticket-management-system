@@ -24,9 +24,9 @@ class WelcomeHeaderWidget extends Widget
         $hour = (int) now()->format('G');
 
         return match (true) {
-            $hour < 12 => 'Good morning',
-            $hour < 17 => 'Good afternoon',
-            default => 'Good evening',
+            $hour < 12 => __('Good morning'),
+            $hour < 17 => __('Good afternoon'),
+            default => __('Good evening'),
         };
     }
 }

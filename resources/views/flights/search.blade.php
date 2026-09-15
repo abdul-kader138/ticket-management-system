@@ -17,16 +17,16 @@
 
         <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
             <div>
-                <h1 class="text-lg font-semibold text-[var(--fg)]">Search flights</h1>
-                <p class="text-sm text-[var(--muted)] mt-0.5">Compare live fares across airlines and routes.</p>
+                <h1 class="text-lg font-semibold text-[var(--fg)]">{{ __('Search flights') }}</h1>
+                <p class="text-sm text-[var(--muted)] mt-0.5">{{ __('Compare live fares across airlines and routes.') }}</p>
             </div>
 
             @if($flightApiEnabled)
                 @php
                     // -1 is App\Models\SubscriptionPlan::UNLIMITED — see
                     // App\Services\Flights\SearchQuotaService::remaining().
-                    $dayLabel = $quotaRemaining['day'] === -1 ? 'Unlimited today' : $quotaRemaining['day'].' '.Str::plural('search', $quotaRemaining['day']).' left today';
-                    $monthLabel = $quotaRemaining['month'] === -1 ? 'unlimited this month' : $quotaRemaining['month'].' left this month';
+                    $dayLabel = $quotaRemaining['day'] === -1 ? __('Unlimited today') : $quotaRemaining['day'].' '.__('searches left today');
+                    $monthLabel = $quotaRemaining['month'] === -1 ? __('unlimited this month') : $quotaRemaining['month'].' '.__('left this month');
                     $low = $quotaRemaining['day'] !== -1 && $quotaRemaining['day'] <= 3;
                 @endphp
                 <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium {{ $low ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-[var(--card-border)] bg-[var(--card)] text-[var(--muted)]' }}">
@@ -53,7 +53,7 @@
         @unless($flightApiEnabled)
             <div class="mb-4 flex items-start gap-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-3">
                 <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" /></svg>
-                <span><span class="font-medium">Preview mode.</span> No flight provider is connected yet — searches return sample data. An administrator can add one under <span class="font-medium">Flight Providers</span>.</span>
+                <span><span class="font-medium">{{ __('Preview mode.') }}</span> {{ __('No flight provider is connected yet — searches return sample data. An administrator can add one under') }} <span class="font-medium">{{ __('Flight Providers') }}</span>.</span>
             </div>
         @endunless
 
@@ -84,7 +84,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M15.312 5.312a5.5 5.5 0 1 0 1.302 5.633.75.75 0 0 1 1.415.49A7 7 0 1 1 16.5 4.11V2.75a.75.75 0 0 1 1.5 0v3a.75.75 0 0 1-.75.75h-3a.75.75 0 0 1 0-1.5h1.06l-.998-1.688Z" clip-rule="evenodd" />
                     </svg>
-                    Reset
+                    {{ __('Reset') }}
                 </button>
             </div>
 
@@ -104,7 +104,7 @@
                                 <div class="px-4 py-3.5 border-b-2 border-[var(--brand)] sm:border-b-0 sm:border-r border-[var(--card-border)] rounded-t-md sm:rounded-l-md sm:rounded-tr-none">
                                     <label :for="'input-' + leg.id + '-from'" class="flex items-center gap-1 text-xs text-[var(--muted)]">
                                         <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v6.19L4.99 6.68a.75.75 0 1 0-.98 1.14l5.5 4.75c.28.24.7.24.98 0l5.5-4.75a.75.75 0 1 0-.98-1.14l-4.26 2.26V2.75Z" /><path d="M3.5 15.5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25a.75.75 0 0 1-.75-.75Z" /></svg>
-                                        From
+                                        {{ __('From') }}
                                     </label>
                                     <div class="relative" x-on:click.outside="leg.fromOpen = false">
                                         <input
@@ -115,7 +115,7 @@
                                             @input="onAirportInput(leg, 'from')"
                                             @keydown="airportKeydown(leg, 'from', $event)"
                                             @focus="if (leg.fromSuggestions.length) leg.fromOpen = true"
-                                            placeholder="Enter airport or city"
+                                            placeholder="{{ __('Enter airport or city') }}"
                                             autocomplete="off"
                                             required
                                             role="combobox"
@@ -183,7 +183,7 @@
                                 <div class="px-4 py-3.5 rounded-b-md sm:rounded-r-md sm:rounded-bl-none">
                                     <label :for="'input-' + leg.id + '-to'" class="flex items-center gap-1 text-xs text-[var(--muted)]">
                                         <svg class="w-3 h-3 rotate-180" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v6.19L4.99 6.68a.75.75 0 1 0-.98 1.14l5.5 4.75c.28.24.7.24.98 0l5.5-4.75a.75.75 0 1 0-.98-1.14l-4.26 2.26V2.75Z" /><path d="M3.5 15.5a.75.75 0 0 1 .75-.75h11.5a.75.75 0 0 1 0 1.5H4.25a.75.75 0 0 1-.75-.75Z" /></svg>
-                                        To
+                                        {{ __('To') }}
                                     </label>
                                     <div class="relative" x-on:click.outside="leg.toOpen = false">
                                         <input
@@ -194,7 +194,7 @@
                                             @input="onAirportInput(leg, 'to')"
                                             @keydown="airportKeydown(leg, 'to', $event)"
                                             @focus="if (leg.toSuggestions.length) leg.toOpen = true"
-                                            placeholder="Enter airport or city"
+                                            placeholder="{{ __('Enter airport or city') }}"
                                             autocomplete="off"
                                             required
                                             role="combobox"
@@ -250,7 +250,7 @@
 
                             <div class="lg:w-48 px-4 py-2 border border-[var(--card-border)] border-b-2 border-b-[var(--brand)] rounded-md flex items-center justify-between gap-2">
                                 <div class="w-full">
-                                    <label class="block text-xs text-[var(--muted)]">Flight Date</label>
+                                    <label class="block text-xs text-[var(--muted)]">{{ __('Flight Date') }}</label>
                                     <input
                                         type="text"
                                         inputmode="numeric"
@@ -295,7 +295,7 @@
                 <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
 
                     <div class="relative border border-[var(--card-border)] border-b-2 border-b-[var(--brand)] rounded-md px-3 py-2" x-on:click.outside="travelerOpen = false">
-                        <label class="block text-xs text-[var(--muted)]">Traveler</label>
+                        <label class="block text-xs text-[var(--muted)]">{{ __('Traveler') }}</label>
                         <button type="button" @click="travelerOpen = !travelerOpen" class="w-full text-left text-sm mt-0.5" x-text="travelerLabel()"></button>
 
                         <div
@@ -304,9 +304,9 @@
                             class="absolute z-10 top-full left-0 mt-2 w-64 bg-[var(--card)] border border-[var(--card-border)] rounded-md shadow-lg p-4 space-y-3"
                         >
                             <template x-for="p in [
-                                { key: 'adults', label: 'Adults', hint: '12+ years', min: 1 },
-                                { key: 'children', label: 'Children', hint: '2-11 years', min: 0 },
-                                { key: 'infants', label: 'Infants', hint: 'Under 2 years', min: 0 },
+                                { key: 'adults', label: @json(__('Adults')), hint: @json(__('12+ years')), min: 1 },
+                                { key: 'children', label: @json(__('Children')), hint: @json(__('2-11 years')), min: 0 },
+                                { key: 'infants', label: @json(__('Infants')), hint: @json(__('Under 2 years')), min: 0 },
                             ]" :key="p.key">
                                 <div class="flex items-center justify-between">
                                     <div>
@@ -320,13 +320,13 @@
                                     </div>
                                 </div>
                             </template>
-                            <button type="button" @click="travelerOpen = false" class="w-full mt-2 text-sm bg-[var(--brand)] text-white rounded-md py-1.5 hover:bg-[var(--brand-dark)]">Done</button>
+                            <button type="button" @click="travelerOpen = false" class="w-full mt-2 text-sm bg-[var(--brand)] text-white rounded-md py-1.5 hover:bg-[var(--brand-dark)]">{{ __('Done') }}</button>
                         </div>
                     </div>
 
                     <template x-for="field in [
-                        { key: 'cabinClass', label: 'Flight Class', options: cabinClassOptions, name: 'cabin_class' },
-                        { key: 'source', label: 'Sources', options: sourceOptions, name: 'source' },
+                        { key: 'cabinClass', label: @json(__('Flight Class')), options: cabinClassOptions, name: 'cabin_class' },
+                        { key: 'source', label: @json(__('Sources')), options: sourceOptions, name: 'source' },
                     ]" :key="field.key">
                         <div class="relative border border-[var(--card-border)] border-b-2 border-b-[var(--brand)] rounded-md px-3 py-2" x-on:click.outside="dropdownOpen[field.key] = false">
                             <label :for="'dropdown-btn-' + field.key" class="block text-xs text-[var(--muted)]" x-text="field.label"></label>
@@ -367,12 +367,12 @@
 
                     <div class="border border-[var(--card-border)] rounded-md px-3 py-2 flex items-center gap-2">
                         <input id="flexible_dates_checkbox" type="checkbox" x-model="flexible" class="rounded border-[var(--card-border)] text-[var(--brand)] focus:ring-[var(--brand)]">
-                        <label for="flexible_dates_checkbox" class="text-sm text-[var(--muted)]">Flexible &plusmn; 3 Days</label>
+                        <label for="flexible_dates_checkbox" class="text-sm text-[var(--muted)]">{{ __('Flexible ± 3 Days') }}</label>
                     </div>
 
                     <template x-for="field in [
-                        { key: 'airline', label: 'Airlines', options: airlineOptions, name: 'airline' },
-                        { key: 'fareType', label: 'Type', options: fareTypeOptions, name: 'fare_type' },
+                        { key: 'airline', label: @json(__('Airlines')), options: airlineOptions, name: 'airline' },
+                        { key: 'fareType', label: @json(__('Type')), options: fareTypeOptions, name: 'fare_type' },
                     ]" :key="field.key">
                         <div class="relative border border-[var(--card-border)] border-b-2 border-b-[var(--brand)] rounded-md px-3 py-2" x-on:click.outside="dropdownOpen[field.key] = false">
                             <label :for="'dropdown-btn-' + field.key" class="block text-xs text-[var(--muted)]" x-text="field.label"></label>
@@ -430,7 +430,7 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
-                        <span x-text="submitting ? 'Searching flights…' : 'Search flights'"></span>
+                        <span x-text="submitting ? @js(__('Searching flights…')) : @js(__('Search flights'))"></span>
                     </button>
                 </div>
             </form>
@@ -492,9 +492,9 @@
                 today,
                 tripType: 'oneway',
                 tripTypes: [
-                    { value: 'oneway', label: 'One Way' },
-                    { value: 'roundtrip', label: 'Round Trip' },
-                    { value: 'multicity', label: 'Multi City' },
+                    { value: 'oneway', label: @json(__('One Way')) },
+                    { value: 'roundtrip', label: @json(__('Round Trip')) },
+                    { value: 'multicity', label: @json(__('Multi City')) },
                 ],
                 legs: [makeLeg()],
                 adults: 1,
@@ -502,20 +502,20 @@
                 infants: 0,
                 cabinClass: 'economy',
                 cabinClassOptions: [
-                    { value: 'economy', label: 'Economy' },
-                    { value: 'premium_economy', label: 'Premium Economy' },
-                    { value: 'business', label: 'Business' },
-                    { value: 'first', label: 'First' },
+                    { value: 'economy', label: @json(__('Economy')) },
+                    { value: 'premium_economy', label: @json(__('Premium Economy')) },
+                    { value: 'business', label: @json(__('Business')) },
+                    { value: 'first', label: @json(__('First')) },
                 ],
                 source: 'all',
                 sourceOptions: [
-                    { value: 'all', label: 'All' },
+                    { value: 'all', label: @json(__('All')) },
                 ],
                 airline: '',
-                airlineOptions: [{ value: '', label: 'Select' }, ...@json($airlines)],
+                airlineOptions: [{ value: '', label: @json(__('Select')) }, ...@json($airlines)],
                 fareType: 'all',
                 fareTypeOptions: [
-                    { value: 'all', label: 'All Fares' },
+                    { value: 'all', label: @json(__('All Fares')) },
                     { value: 'refundable', label: 'Refundable' },
                     { value: 'non_refundable', label: 'Non-Refundable' },
                 ],

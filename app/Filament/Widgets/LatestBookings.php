@@ -23,7 +23,12 @@ class LatestBookings extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $heading = 'Latest bookings';
+    protected static ?string $heading = null;
+
+    public function getHeading(): ?string
+    {
+        return __('Latest bookings');
+    }
 
     public function table(Table $table): Table
     {
@@ -38,15 +43,15 @@ class LatestBookings extends BaseWidget
             ->paginated(false)
             ->columns([
                 TextColumn::make('id')
-                    ->label('Ref')
+                    ->label(__('Ref'))
                     ->prefix('#'),
 
                 TextColumn::make('user.name')
-                    ->label('Customer')
+                    ->label(__('Customer'))
                     ->default('—'),
 
                 TextColumn::make('route')
-                    ->label('Route')
+                    ->label(__('Route'))
                     ->getStateUsing(function (Booking $record): string {
                         $segments = $record->segments;
 
@@ -57,7 +62,7 @@ class LatestBookings extends BaseWidget
                         return $segments->first()->origin.' → '.$segments->last()->destination;
                     }),
 
-                TextColumn::make('status')
+                TextColumn::make('status')->label(__('Status'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         Booking::STATUS_CONFIRMED, Booking::STATUS_CHANGED => 'success',
@@ -69,18 +74,18 @@ class LatestBookings extends BaseWidget
                     ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', ' ', $state))),
 
                 TextColumn::make('total_price_cents')
-                    ->label('Amount')
+                    ->label(__('Amount'))
                     ->formatStateUsing(fn (Booking $record) => $record->currency.' '.number_format($record->total_price_cents / 100, 2))
                     ->alignEnd(),
 
                 TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('Created'))
                     ->since()
                     ->tooltip(fn (Booking $record) => $record->created_at?->toDayDateTimeString()),
             ])
             ->actions([
                 Action::make('open')
-                    ->label('Open')
+                    ->label(__('Open'))
                     ->icon('heroicon-m-arrow-top-right-on-square')
                     ->url(fn (Booking $record) => BookingResource::getUrl('view', ['record' => $record]))
                     ->visible(fn () => BookingResource::canViewAny()),

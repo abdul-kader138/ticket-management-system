@@ -43,6 +43,16 @@ class BookingResource extends Resource
         return __('Bookings');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('Booking');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Bookings');
+    }
+
     protected static ?int $navigationSort = 10;
 
     public static function getNavigationGroup(): ?string
@@ -62,24 +72,34 @@ class BookingResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'flightProvider', 'payments']))
             ->columns([
                 TextColumn::make('id')
-                    ->label('Booking #')
+                    ->label(__('Booking #'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('pnr')
-                    ->label('PNR')
+                    ->label(__('PNR'))
                     ->searchable()
                     ->default('—'),
 
                 TextColumn::make('user.name')
-                    ->label('Customer')
+                    ->label(__('Customer'))
                     ->searchable(['first_name', 'last_name', 'email']),
 
                 TextColumn::make('flightProvider.name')
-                    ->label('Provider'),
+                    ->label(__('Provider')),
 
-                TextColumn::make('status')
+                TextColumn::make('status')->label(__('Status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state) => __(match ($state) {
+                        Booking::STATUS_HELD => 'Held',
+                        Booking::STATUS_PENDING_PAYMENT => 'Pending Payment',
+                        Booking::STATUS_CONFIRMED => 'Confirmed',
+                        Booking::STATUS_CHANGED => 'Changed',
+                        Booking::STATUS_CANCELLED => 'Cancelled',
+                        Booking::STATUS_REFUNDED => 'Refunded',
+                        Booking::STATUS_EXPIRED => 'Expired',
+                        default => ucfirst(str_replace('_', ' ', $state)),
+                    }))
                     ->color(fn (string $state) => match ($state) {
                         Booking::STATUS_CONFIRMED => 'success',
                         Booking::STATUS_HELD, Booking::STATUS_PENDING_PAYMENT => 'warning',
@@ -88,11 +108,11 @@ class BookingResource extends Resource
                     }),
 
                 TextColumn::make('total_price_cents')
-                    ->label('Total')
+                    ->label(__('Total'))
                     ->formatStateUsing(fn (Booking $record) => "{$record->currency} ".number_format($record->total_price_cents / 100, 2)),
 
                 TextColumn::make('created_at')
-                    ->label('Booked')
+                    ->label(__('Booked'))
                     ->dateTime('d M Y H:i')
                     ->sortable(),
             ])
@@ -100,17 +120,17 @@ class BookingResource extends Resource
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        Booking::STATUS_HELD => 'Held',
-                        Booking::STATUS_PENDING_PAYMENT => 'Pending Payment',
-                        Booking::STATUS_CONFIRMED => 'Confirmed',
-                        Booking::STATUS_CHANGED => 'Changed',
-                        Booking::STATUS_CANCELLED => 'Cancelled',
-                        Booking::STATUS_REFUNDED => 'Refunded',
-                        Booking::STATUS_EXPIRED => 'Expired',
+                        Booking::STATUS_HELD => __('Held'),
+                        Booking::STATUS_PENDING_PAYMENT => __('Pending Payment'),
+                        Booking::STATUS_CONFIRMED => __('Confirmed'),
+                        Booking::STATUS_CHANGED => __('Changed'),
+                        Booking::STATUS_CANCELLED => __('Cancelled'),
+                        Booking::STATUS_REFUNDED => __('Refunded'),
+                        Booking::STATUS_EXPIRED => __('Expired'),
                     ]),
 
                 Filter::make('created_at')
-                    ->label('Booked between')
+                    ->label(__('Booked between'))
                     ->form([
                         DatePicker::make('booked_from')
                             ->native(false)
@@ -144,7 +164,7 @@ class BookingResource extends Resource
                 ViewAction::make(),
 
                 Action::make('takePayment')
-                    ->label('Take payment')
+                    ->label(__('Take payment'))
                     ->icon('heroicon-o-credit-card')
                     ->color('primary')
                     ->visible(fn (Booking $record) => $record->status === Booking::STATUS_HELD && ! $record->hasExpired())
@@ -155,7 +175,7 @@ class BookingResource extends Resource
                 // gateway directly (same call as the nightly reconcile
                 // sweep) instead of waiting for it.
                 Action::make('checkPayment')
-                    ->label('Check payment')
+                    ->label(__('Check payment'))
                     ->icon('heroicon-o-arrow-path')
                     ->color('gray')
                     ->visible(fn (Booking $record) => $record->status === Booking::STATUS_PENDING_PAYMENT)
@@ -188,7 +208,7 @@ class BookingResource extends Resource
                     }),
 
                 Action::make('change')
-                    ->label('Change')
+                    ->label(__('Change'))
                     ->icon('heroicon-o-arrow-path')
                     ->color('gray')
                     ->visible(fn (Booking $record) => auth()->user()->can('update_booking')
@@ -196,7 +216,7 @@ class BookingResource extends Resource
                     ->url(fn (Booking $record) => ChangeBooking::getUrl(['booking' => $record->id])),
 
                 Action::make('forceCancel')
-                    ->label('Cancel')
+                    ->label(__('Cancel'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
@@ -205,7 +225,7 @@ class BookingResource extends Resource
                     ], true))
                     ->form([
                         Textarea::make('reason')
-                            ->label('Reason')
+                            ->label(__('Reason'))
                             ->required()
                             ->helperText('Recorded on the booking\'s audit trail.'),
                     ])
@@ -219,7 +239,7 @@ class BookingResource extends Resource
                     }),
 
                 Action::make('manualRefund')
-                    ->label('Refund')
+                    ->label(__('Refund'))
                     ->icon('heroicon-o-banknotes')
                     ->color('warning')
                     ->requiresConfirmation()
@@ -227,13 +247,13 @@ class BookingResource extends Resource
                         && $record->payments->contains(fn (Payment $payment) => $payment->status === Payment::STATUS_SUCCEEDED))
                     ->form([
                         TextInput::make('amount')
-                            ->label('Amount to refund')
+                            ->label(__('Amount to refund'))
                             ->numeric()
                             ->minValue(0.01)
                             ->required()
                             ->helperText('In the booking\'s currency, e.g. 49.99.'),
                         Textarea::make('reason')
-                            ->label('Reason')
+                            ->label(__('Reason'))
                             ->required(),
                     ])
                     ->action(function (Booking $record, array $data) {

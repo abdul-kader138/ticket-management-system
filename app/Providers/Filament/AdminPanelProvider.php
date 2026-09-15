@@ -88,6 +88,8 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-banknotes'),
                 NavigationGroup::make(fn () => __('Reports'))
                     ->icon('heroicon-o-chart-bar-square'),
+                NavigationGroup::make(fn () => __('filament-shield::filament-shield.nav.group'))
+                    ->icon('heroicon-o-shield-check'),
                 NavigationGroup::make(fn () => __('Administration'))
                     ->icon('heroicon-o-cog-6-tooth')
                     ->collapsed(),

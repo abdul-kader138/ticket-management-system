@@ -104,14 +104,14 @@
         @if(count($offers) === 0)
             <div class="bg-[var(--card)] rounded-xl border border-[var(--card-border)] p-10 text-center">
                 <svg class="w-10 h-10 mx-auto text-[var(--muted)] mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                <p class="text-sm font-medium text-[var(--fg)]">No offers for this search</p>
-                <p class="text-sm text-[var(--muted)] mt-1">Try nearby airports, different dates, or a broader cabin class.</p>
+                <p class="text-sm font-medium text-[var(--fg)]">{{ __('No offers for this search') }}</p>
+                <p class="text-sm text-[var(--muted)] mt-1">{{ __('Try nearby airports, different dates, or a broader cabin class.') }}</p>
             </div>
         @else
             <div class="flex items-center gap-2 mb-4 text-sm">
-                <span class="text-[var(--muted)]">Sort by</span>
+                <span class="text-[var(--muted)]">{{ __('Sort by') }}</span>
                 <div class="inline-flex rounded-md border border-[var(--card-border)] overflow-hidden">
-                    @foreach(['price' => 'Cheapest', 'duration' => 'Fastest', 'departure' => 'Earliest'] as $value => $label)
+                    @foreach(['price' => __('Cheapest'), 'duration' => __('Fastest'), 'departure' => __('Earliest')] as $value => $label)
                         <button type="button"
                                 @click="sort = '{{ $value }}'"
                                 class="px-3 py-1.5 transition-colors"
@@ -200,13 +200,13 @@
 
                                 <div class="flex lg:justify-end flex-wrap gap-1 mb-3">
                                     @if($row['amount'] === $cheapest)
-                                        <span class="text-[10px] font-semibold uppercase tracking-wide rounded bg-emerald-100 text-emerald-700 px-1.5 py-0.5">Cheapest</span>
+                                        <span class="text-[10px] font-semibold uppercase tracking-wide rounded bg-emerald-100 text-emerald-700 px-1.5 py-0.5">{{ __('Cheapest') }}</span>
                                     @endif
                                     @if($fastest && $row['duration_min'] === $fastest)
-                                        <span class="text-[10px] font-semibold uppercase tracking-wide rounded bg-sky-100 text-sky-700 px-1.5 py-0.5">Fastest</span>
+                                        <span class="text-[10px] font-semibold uppercase tracking-wide rounded bg-sky-100 text-sky-700 px-1.5 py-0.5">{{ __('Fastest') }}</span>
                                     @endif
                                     @if($refundable)
-                                        <span class="text-[10px] font-semibold uppercase tracking-wide rounded bg-[var(--hover-bg)] text-[var(--muted)] px-1.5 py-0.5">Refundable</span>
+                                        <span class="text-[10px] font-semibold uppercase tracking-wide rounded bg-[var(--hover-bg)] text-[var(--muted)] px-1.5 py-0.5">{{ __('Refundable') }}</span>
                                     @endif
                                 </div>
 
@@ -233,7 +233,7 @@
         {{-- on a production page. --}}
         @if(config('app.debug'))
             <details class="mt-8 bg-[var(--card)] rounded-xl border border-[var(--card-border)] p-4">
-                <summary class="text-sm text-[var(--muted)] cursor-pointer select-none">Raw provider response (debug)</summary>
+                <summary class="text-sm text-[var(--muted)] cursor-pointer select-none">{{ __('Raw provider response (debug)') }}</summary>
                 <pre class="mt-3 text-xs text-[var(--muted)] overflow-x-auto whitespace-pre-wrap">{{ json_encode($offers, JSON_PRETTY_PRINT) }}</pre>
             </details>
         @endif

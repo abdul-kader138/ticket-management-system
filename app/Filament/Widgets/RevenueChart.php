@@ -34,9 +34,9 @@ class RevenueChart extends ChartWidget
     protected function getFilters(): ?array
     {
         return [
-            '7' => 'Last 7 days',
-            '30' => 'Last 30 days',
-            '90' => 'Last 90 days',
+            '7' => __('Last 7 days'),
+            '30' => __('Last 30 days'),
+            '90' => __('Last 90 days'),
         ];
     }
 
@@ -69,7 +69,7 @@ class RevenueChart extends ChartWidget
 
         return [
             'datasets' => [[
-                'label' => 'Revenue',
+                'label' => __('Revenue'),
                 'data' => array_values($rows),
                 'borderColor' => 'rgba(16, 185, 129, 1)',
                 'backgroundColor' => 'rgba(16, 185, 129, 0.12)',

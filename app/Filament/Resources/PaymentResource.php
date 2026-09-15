@@ -31,6 +31,16 @@ class PaymentResource extends Resource
         return __('Payments');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('Payment');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Payments');
+    }
+
     protected static ?int $navigationSort = 20;
 
     public static function getNavigationGroup(): ?string
@@ -43,28 +53,36 @@ class PaymentResource extends Resource
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('payable'))
             ->columns([
-                TextColumn::make('id')->label('Payment #')->searchable()->sortable(),
+                TextColumn::make('id')->label(__('Payment #'))->searchable()->sortable(),
 
                 TextColumn::make('gateway_reference')
-                    ->label('Gateway ref.')
+                    ->label(__('Gateway ref.'))
                     ->searchable()
                     ->default('—')
                     ->toggleable(),
 
                 TextColumn::make('user.name')
-                    ->label('Customer')
+                    ->label(__('Customer'))
                     ->searchable(['first_name', 'last_name', 'email']),
 
                 TextColumn::make('payable')
-                    ->label('For')
+                    ->label(__('For'))
                     ->state(fn (Payment $record) => $record->payable instanceof Booking
-                        ? 'Booking '.($record->payable->pnr ?: '#'.$record->payable->id)
-                        : 'Subscription'),
+                        ? __('Booking').' '.($record->payable->pnr ?: '#'.$record->payable->id)
+                        : __('Subscription')),
 
-                TextColumn::make('gateway')->badge(),
+                TextColumn::make('gateway')->label(__('Gateway'))->badge(),
 
-                TextColumn::make('status')
+                TextColumn::make('status')->label(__('Status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state) => __(match ($state) {
+                        Payment::STATUS_PENDING => 'Pending',
+                        Payment::STATUS_SUCCEEDED => 'Succeeded',
+                        Payment::STATUS_FAILED => 'Failed',
+                        Payment::STATUS_REFUNDED => 'Refunded',
+                        Payment::STATUS_PARTIALLY_REFUNDED => 'Partially Refunded',
+                        default => ucfirst(str_replace('_', ' ', $state)),
+                    }))
                     ->color(fn (string $state) => match ($state) {
                         Payment::STATUS_SUCCEEDED => 'success',
                         Payment::STATUS_PENDING => 'warning',
@@ -74,24 +92,24 @@ class PaymentResource extends Resource
                     }),
 
                 TextColumn::make('amount_cents')
-                    ->label('Amount')
+                    ->label(__('Amount'))
                     ->formatStateUsing(fn (Payment $record) => "{$record->currency} ".number_format($record->amount_cents / 100, 2)),
 
-                TextColumn::make('created_at')->label('Created')->dateTime('d M Y H:i')->sortable(),
+                TextColumn::make('created_at')->label(__('Created'))->dateTime('d M Y H:i')->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('gateway')->options(['stripe' => 'Stripe', 'paypal' => 'PayPal']),
                 SelectFilter::make('status')->options([
-                    Payment::STATUS_PENDING => 'Pending',
-                    Payment::STATUS_SUCCEEDED => 'Succeeded',
-                    Payment::STATUS_FAILED => 'Failed',
-                    Payment::STATUS_REFUNDED => 'Refunded',
-                    Payment::STATUS_PARTIALLY_REFUNDED => 'Partially Refunded',
+                    Payment::STATUS_PENDING => __('Pending'),
+                    Payment::STATUS_SUCCEEDED => __('Succeeded'),
+                    Payment::STATUS_FAILED => __('Failed'),
+                    Payment::STATUS_REFUNDED => __('Refunded'),
+                    Payment::STATUS_PARTIALLY_REFUNDED => __('Partially Refunded'),
                 ]),
 
                 Filter::make('created_at')
-                    ->label('Created between')
+                    ->label(__('Created between'))
                     ->form([
                         DatePicker::make('created_from')
                             ->native(false)

@@ -39,7 +39,7 @@ class EditProfile extends BaseEditProfile
                 $this->makeForm()
                     ->schema([
                         Grid::make(3)->schema([
-                            Section::make('Profile Picture')
+                            Section::make(__('Profile Picture'))
                                 ->schema([
                                     FileUpload::make('avatar')
                                         ->label('')
@@ -52,7 +52,7 @@ class EditProfile extends BaseEditProfile
                                 ])
                                 ->columnSpan(1),
 
-                            Section::make('Personal Information')
+                            Section::make(__('Personal Information'))
                                 ->schema([
                                     Grid::make(2)->schema([
                                         $this->getFirstNameFormComponent(),
@@ -69,7 +69,7 @@ class EditProfile extends BaseEditProfile
                                 ->columnSpan(2),
                         ]),
 
-                        Section::make('Change Password')
+                        Section::make(__('Change Password'))
                             ->schema([
                                 Grid::make(2)->schema([
                                     $this->getPasswordFormComponent(),
@@ -77,7 +77,7 @@ class EditProfile extends BaseEditProfile
                                 ]),
                             ]),
 
-                        Section::make('Two-Factor Authentication')
+                        Section::make(__('Two-Factor Authentication'))
                             ->schema([
                                 Placeholder::make('two_factor_status')
                                     ->label('')
@@ -97,7 +97,7 @@ class EditProfile extends BaseEditProfile
     protected function getFirstNameFormComponent(): Component
     {
         return TextInput::make('first_name')
-            ->label('First name')
+            ->label(__('First name'))
             ->required()
             ->maxLength(255)
             ->autofocus();
@@ -106,7 +106,7 @@ class EditProfile extends BaseEditProfile
     protected function getLastNameFormComponent(): Component
     {
         return TextInput::make('last_name')
-            ->label('Last name')
+            ->label(__('Last name'))
             ->required()
             ->maxLength(255);
     }
@@ -118,7 +118,7 @@ class EditProfile extends BaseEditProfile
     protected function getPasswordFormComponent(): Component
     {
         return parent::getPasswordFormComponent()
-            ->helperText('Leave blank to keep your current password. At least 8 characters, with uppercase, lowercase, and a number.');
+            ->helperText(__('Leave blank to keep your current password. At least 8 characters, with uppercase, lowercase, and a number.'));
     }
 
     private function twoFactorStatusText(): string
@@ -160,7 +160,7 @@ class EditProfile extends BaseEditProfile
             $this->enableTwoFactorAction($user)->visible(fn () => ! $isEnabled()),
 
             Action::make('showRecoveryCodes')
-                ->label('Show Recovery Codes')
+                ->label(__('Show Recovery Codes'))
                 ->icon('heroicon-o-key')
                 ->color('gray')
                 ->visible($isEnabled)
@@ -171,7 +171,7 @@ class EditProfile extends BaseEditProfile
                 ])),
 
             Action::make('regenerateRecoveryCodes')
-                ->label('Regenerate Recovery Codes')
+                ->label(__('Regenerate Recovery Codes'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
                 ->visible($isEnabled)
@@ -182,11 +182,11 @@ class EditProfile extends BaseEditProfile
                         'two_factor_recovery_codes' => app(TwoFactorAuthenticationService::class)->generateRecoveryCodes(),
                     ])->save();
 
-                    Notification::make()->success()->title('Recovery codes regenerated')->send();
+                    Notification::make()->success()->title(__('Recovery codes regenerated'))->send();
                 }),
 
             Action::make('disableTwoFactor')
-                ->label('Disable Two-Factor Authentication')
+                ->label(__('Disable Two-Factor Authentication'))
                 ->icon('heroicon-o-shield-exclamation')
                 ->color('danger')
                 ->visible($isEnabled)
@@ -200,7 +200,7 @@ class EditProfile extends BaseEditProfile
                         'two_factor_confirmed_at' => null,
                     ])->save();
 
-                    Notification::make()->success()->title('Two-factor authentication disabled')->send();
+                    Notification::make()->success()->title(__('Two-factor authentication disabled'))->send();
                 }),
         ];
     }
@@ -210,13 +210,13 @@ class EditProfile extends BaseEditProfile
         $service = app(TwoFactorAuthenticationService::class);
 
         return Action::make('enableTwoFactor')
-            ->label('Enable Two-Factor Authentication')
+            ->label(__('Enable Two-Factor Authentication'))
             ->icon('heroicon-o-shield-check')
             ->fillForm(fn () => ['secret' => $service->generateSecretKey()])
             ->form([
                 Hidden::make('secret'),
                 Placeholder::make('qr_code')
-                    ->label('Scan this with your authenticator app')
+                    ->label(__('Scan this with your authenticator app'))
                     ->content(fn (Get $get) => new HtmlString(
                         '<div style="display:flex;flex-direction:column;align-items:center;gap:.5rem;">'
                         .'<img src="'.$service->qrCodeSvg($user, (string) $get('secret')).'" alt="Two-factor setup QR code" />'
@@ -224,8 +224,8 @@ class EditProfile extends BaseEditProfile
                         .'</div>'
                     )),
                 TextInput::make('code')
-                    ->label('Authentication Code')
-                    ->helperText('Enter the 6-digit code your app just generated to confirm setup.')
+                    ->label(__('Authentication Code'))
+                    ->helperText(__('Enter the 6-digit code your app just generated to confirm setup.'))
                     ->required()
                     ->autocomplete('one-time-code')
                     ->extraInputAttributes(['inputmode' => 'numeric'])
@@ -242,7 +242,7 @@ class EditProfile extends BaseEditProfile
                     'two_factor_confirmed_at' => now(),
                 ])->save();
 
-                Notification::make()->success()->title('Two-factor authentication enabled')->send();
+                Notification::make()->success()->title(__('Two-factor authentication enabled'))->send();
             });
     }
 }

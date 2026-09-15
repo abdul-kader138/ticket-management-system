@@ -29,48 +29,48 @@ class ViewActivityLog extends ViewRecord
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Section::make('Activity')
+            Section::make(__('Activity'))
                 ->columns(2)
                 ->schema([
                     TextEntry::make('created_at')
-                        ->label('When')
+                        ->label(__('When'))
                         ->dateTime('d M Y H:i:s'),
 
                     TextEntry::make('log_name')
-                        ->label('Area')
+                        ->label(__('Area'))
                         ->badge(),
 
                     TextEntry::make('description')
-                        ->label('Activity')
+                        ->label(__('Activity'))
                         ->columnSpanFull(),
 
                     TextEntry::make('causer.name')
-                        ->label('Performed by')
+                        ->label(__('Performed by'))
                         ->default('System'),
 
                     TextEntry::make('subject_type')
-                        ->label('On')
+                        ->label(__('On'))
                         ->formatStateUsing(fn (Activity $record) => $record->subject_type
                             ? class_basename($record->subject_type).' #'.$record->subject_id
                             : '—'),
 
                     TextEntry::make('properties.ip')
-                        ->label('IP address')
+                        ->label(__('IP address'))
                         ->default('—'),
                 ]),
 
-            Section::make('Changed values')
+            Section::make(__('Changed values'))
                 ->visible(fn (Activity $record) => filled($record->properties?->get('attributes')))
                 ->schema([
                     KeyValueEntry::make('properties.old')
-                        ->label('Before'),
+                        ->label(__('Before')),
 
                     KeyValueEntry::make('properties.attributes')
-                        ->label('After'),
+                        ->label(__('After')),
                 ])
                 ->columns(2),
 
-            Section::make('Other properties')
+            Section::make(__('Other properties'))
                 ->visible(fn (Activity $record) => filled(
                     $record->properties?->except(['attributes', 'old', 'ip'])->all()
                 ))

@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\StaffVerifyEmailController;
 use App\Http\Controllers\FlightSearchController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Support\Facades\Route;
 
 // Staff (panel) email verification. No auth middleware on purpose — the
@@ -21,7 +22,9 @@ Route::middleware('auth')->group(function () {
     // The panel-facing "Search Flights" page (App\Filament\Pages\FlightSearch)
     // owns the pretty /flights URL and embeds this route in an iframe so the
     // form/results keep the admin sidebar around them.
-    Route::get('/flights/embed', [FlightSearchController::class, 'index'])->name('flights.embed');
+    Route::get('/flights/embed', [FlightSearchController::class, 'index'])
+        ->middleware(SetLocale::class)
+        ->name('flights.embed');
     // Ceiling only, not the real quota engine — see AppServiceProvider's
     // 'search' limiter and docs/ROADMAP.md, Phase 3.
     Route::post('/flights/search', [FlightSearchController::class, 'search'])

@@ -36,23 +36,23 @@ class ViewBooking extends ViewRecord
     {
         return [
             Action::make('downloadReceipt')
-                ->label('Booking receipt')
+                ->label(__('Booking receipt'))
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('gray')
                 ->action(fn (Booking $record) => app(ReceiptPdfService::class)->booking($record)),
             Action::make('downloadTicket')
-                ->label('Download ticket')
+                ->label(__('Download ticket'))
                 ->icon('heroicon-o-ticket')
                 ->visible(fn (Booking $record) => in_array($record->status, [Booking::STATUS_CONFIRMED, Booking::STATUS_CHANGED], true))
                 ->action(fn (Booking $record) => app(ReceiptPdfService::class)->booking($record, ticket: true)),
             Action::make('takePayment')
-                ->label('Take payment')
+                ->label(__('Take payment'))
                 ->icon('heroicon-o-credit-card')
                 ->visible(fn (Booking $record) => $record->status === Booking::STATUS_HELD && ! $record->hasExpired())
                 ->url(fn (Booking $record) => BookFlight::getUrl(['booking' => $record->id])),
 
             Action::make('checkPayment')
-                ->label('Check payment')
+                ->label(__('Check payment'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
                 ->visible(fn (Booking $record) => $record->status === Booking::STATUS_PENDING_PAYMENT)
@@ -82,7 +82,7 @@ class ViewBooking extends ViewRecord
                 }),
 
             Action::make('change')
-                ->label('Change')
+                ->label(__('Change'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
                 ->visible(fn (Booking $record) => auth()->user()->can('update_booking')
@@ -90,7 +90,7 @@ class ViewBooking extends ViewRecord
                 ->url(fn (Booking $record) => ChangeBooking::getUrl(['booking' => $record->id])),
 
             Action::make('cancel')
-                ->label('Cancel')
+                ->label(__('Cancel'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->requiresConfirmation()
@@ -99,7 +99,7 @@ class ViewBooking extends ViewRecord
                 ], true))
                 ->form([
                     Textarea::make('reason')
-                        ->label('Reason')
+                        ->label(__('Reason'))
                         ->required()
                         ->helperText('Recorded on the booking\'s audit trail.'),
                 ])
@@ -117,34 +117,43 @@ class ViewBooking extends ViewRecord
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Section::make('Booking')
+            Section::make(__('Booking'))
                 ->columns(3)
                 ->schema([
-                    TextEntry::make('status')->badge(),
-                    TextEntry::make('user.name')->label('Customer'),
-                    TextEntry::make('flightProvider.name')->label('Provider'),
-                    TextEntry::make('pnr')->label('PNR')->default('—'),
+                    TextEntry::make('status')->badge()->formatStateUsing(fn (string $state) => __(match ($state) {
+                        Booking::STATUS_HELD => 'Held',
+                        Booking::STATUS_PENDING_PAYMENT => 'Pending Payment',
+                        Booking::STATUS_CONFIRMED => 'Confirmed',
+                        Booking::STATUS_CHANGED => 'Changed',
+                        Booking::STATUS_CANCELLED => 'Cancelled',
+                        Booking::STATUS_REFUNDED => 'Refunded',
+                        Booking::STATUS_EXPIRED => 'Expired',
+                        default => ucfirst(str_replace('_', ' ', $state)),
+                    })),
+                    TextEntry::make('user.name')->label(__('Customer')),
+                    TextEntry::make('flightProvider.name')->label(__('Provider')),
+                    TextEntry::make('pnr')->label(__('PNR'))->default('—'),
                     TextEntry::make('total_price_cents')
-                        ->label('Total')
+                        ->label(__('Total'))
                         ->formatStateUsing(fn (Booking $record) => "{$record->currency} ".number_format($record->total_price_cents / 100, 2)),
-                    TextEntry::make('expires_at')->label('Hold expires')->dateTime('d M Y H:i')->default('—'),
+                    TextEntry::make('expires_at')->label(__('Hold expires'))->dateTime('d M Y H:i')->default('—'),
                 ]),
 
-            Section::make('Segments')
+            Section::make(__('Segments'))
                 ->schema([
                     RepeatableEntry::make('segments')
                         ->label('')
                         ->schema([
-                            TextEntry::make('carrier_name')->label('Carrier'),
-                            TextEntry::make('flight_number')->label('Flight'),
-                            TextEntry::make('origin')->label('From'),
-                            TextEntry::make('destination')->label('To'),
-                            TextEntry::make('departs_at')->label('Departs')->dateTime('d M Y H:i'),
+                            TextEntry::make('carrier_name')->label(__('Carrier')),
+                            TextEntry::make('flight_number')->label(__('Flight')),
+                            TextEntry::make('origin')->label(__('From')),
+                            TextEntry::make('destination')->label(__('To')),
+                            TextEntry::make('departs_at')->label(__('Departs'))->dateTime('d M Y H:i'),
                         ])
                         ->columns(5),
                 ]),
 
-            Section::make('Passengers')
+            Section::make(__('Passengers'))
                 ->schema([
                     RepeatableEntry::make('passengers')
                         ->label('')
@@ -157,7 +166,7 @@ class ViewBooking extends ViewRecord
                         ->columns(4),
                 ]),
 
-            Section::make('Payments')
+            Section::make(__('Payments'))
                 ->schema([
                     RepeatableEntry::make('payments')
                         ->label('')
@@ -165,9 +174,9 @@ class ViewBooking extends ViewRecord
                             TextEntry::make('gateway')->badge(),
                             TextEntry::make('status')->badge(),
                             TextEntry::make('amount_cents')
-                                ->label('Amount')
+                                ->label(__('Amount'))
                                 ->formatStateUsing(fn ($state, $record) => "{$record->currency} ".number_format($state / 100, 2)),
-                            TextEntry::make('created_at')->label('When')->dateTime('d M Y H:i'),
+                            TextEntry::make('created_at')->label(__('When'))->dateTime('d M Y H:i'),
                         ])
                         ->columns(4),
                 ])

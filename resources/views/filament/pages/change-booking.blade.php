@@ -31,7 +31,7 @@
                     @if($b->pnr)<span class="text-gray-500 dark:text-gray-400"> · PNR {{ $b->pnr }}</span>@endif
                 </div>
                 <div class="text-gray-500 dark:text-gray-400">
-                    Current total:
+                    {{ __('Current total') }}:
                     <span class="font-semibold text-gray-950 dark:text-white">{{ $b->currency }} {{ number_format($b->total_price_cents / 100, 2) }}</span>
                 </div>
             </div>
@@ -54,11 +54,11 @@
             <div class="flex justify-between">
                 <x-filament::button tag="a" color="gray"
                     href="{{ $bookingUrl }}">
-                    Cancel
+                    {{ __('Cancel') }}
                 </x-filament::button>
                 <x-filament::button type="submit" wire:loading.attr="disabled" wire:target="searchChangeOffers"
                     icon="heroicon-o-magnifying-glass">
-                    Find change offers
+                    {{ __('Find change offers') }}
                 </x-filament::button>
             </div>
         </form>
@@ -110,13 +110,13 @@
                             wire:target="applyChange('{{ $offerId }}')"
                             icon="heroicon-o-check"
                         >
-                            Apply this change
+                            {{ __('Apply this change') }}
                         </x-filament::button>
                     </div>
                 </x-filament::section>
             @endforeach
 
-            <x-filament::button color="gray" wire:click="backToItinerary">Back</x-filament::button>
+            <x-filament::button color="gray" wire:click="backToItinerary">{{ __('Back') }}</x-filament::button>
         </div>
     @endif
 

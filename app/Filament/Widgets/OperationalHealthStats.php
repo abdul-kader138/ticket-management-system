@@ -45,25 +45,25 @@ class OperationalHealthStats extends BaseWidget
             ->count();
 
         return [
-            Stat::make('Stuck bookings', number_format($stuckBookings))
-                ->description($stuckBookings > 0 ? 'Paid, awaiting provider order — reconcile' : 'None — all paid bookings issued')
+            Stat::make(__('Stuck bookings'), number_format($stuckBookings))
+                ->description($stuckBookings > 0 ? __('Paid, awaiting provider order — reconcile') : __('None — all paid bookings issued'))
                 ->descriptionIcon($stuckBookings > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
                 ->color($stuckBookings > 0 ? 'danger' : 'success')
                 ->url($stuckBookings > 0 ? BookingResource::getUrl('index', ['tableFilters' => ['status' => ['value' => Booking::STATUS_PENDING_PAYMENT]]]) : null),
 
-            Stat::make('Holds expiring < 1h', number_format($expiringHolds))
-                ->description('Held bookings the customer must pay for soon')
+            Stat::make(__('Holds expiring < 1h'), number_format($expiringHolds))
+                ->description(__('Held bookings the customer must pay for soon'))
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($expiringHolds > 0 ? 'warning' : 'gray'),
 
-            Stat::make('Failed payments (24h)', number_format($failedPayments))
-                ->description($failedPayments > 0 ? 'Declines and gateway errors' : 'None in the last 24 hours')
+            Stat::make(__('Failed payments (24h)'), number_format($failedPayments))
+                ->description($failedPayments > 0 ? __('Declines and gateway errors') : __('None in the last 24 hours'))
                 ->descriptionIcon($failedPayments > 0 ? 'heroicon-m-x-circle' : 'heroicon-m-check-circle')
                 ->color($failedPayments > 0 ? 'warning' : 'success')
                 ->url($failedPayments > 0 ? PaymentResource::getUrl('index', ['tableFilters' => ['status' => ['value' => Payment::STATUS_FAILED]]]) : null),
 
-            Stat::make('Unprocessed webhooks', number_format($unprocessedWebhooks))
-                ->description($unprocessedWebhooks > 0 ? 'Gateway events not yet applied — check Horizon' : 'Queue is keeping up')
+            Stat::make(__('Unprocessed webhooks'), number_format($unprocessedWebhooks))
+                ->description($unprocessedWebhooks > 0 ? __('Gateway events not yet applied — check Horizon') : __('Queue is keeping up'))
                 ->descriptionIcon($unprocessedWebhooks > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
                 ->color($unprocessedWebhooks > 0 ? 'danger' : 'success'),
         ];

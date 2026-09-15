@@ -37,6 +37,16 @@ class FlightProviderResource extends Resource
         return __('Flight Providers');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('Flight Provider');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Flight Providers');
+    }
+
     protected static ?int $navigationSort = 20;
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -64,7 +74,7 @@ class FlightProviderResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Provider')
+            Section::make(__('Provider'))
                 ->schema([
                     Grid::make(2)->schema([
                         TextInput::make('name')
@@ -147,22 +157,27 @@ class FlightProviderResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('Name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('code')
+                    ->label(__('Code'))
                     ->badge()
                     ->sortable(),
 
                 TextColumn::make('environment')
+                    ->label(__('Environment'))
                     ->badge()
                     ->color(fn (string $state) => $state === 'live' ? 'success' : 'warning'),
 
                 IconColumn::make('is_enabled')
                     ->label(__('Enabled'))
+                    ->label(__('Enabled'))
                     ->boolean(),
 
                 TextColumn::make('priority')
+                    ->label(__('Priority'))
                     ->sortable(),
 
                 TextColumn::make('updated_at')

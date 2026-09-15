@@ -43,7 +43,7 @@ class SystemSettings extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Administration';
+        return __('Administration');
     }
 
     public static function canAccess(): bool
@@ -65,7 +65,7 @@ class SystemSettings extends Page implements HasForms
 
     public function getTitle(): string
     {
-        return 'System Settings';
+        return __('System Settings');
     }
 
     public function getView(): string
@@ -131,10 +131,10 @@ class SystemSettings extends Page implements HasForms
                 Tabs::make('settings_tabs')->tabs([
 
                     // ── General ──────────────────────────────────────────────
-                    Tab::make('General')
+                    Tab::make(__('General'))
                         ->icon('heroicon-o-home')
                         ->schema([
-                            Section::make('Application')
+                            Section::make(__('Application'))
                                 ->description('Shown in the admin panel header and on the login page.')
                                 ->schema([
                                     TextInput::make('app_name')
@@ -147,7 +147,7 @@ class SystemSettings extends Page implements HasForms
                                         ->maxLength(200),
                                 ])->columns(2),
 
-                            Section::make('Language')
+                            Section::make(__('Language'))
                                 ->description('Sets the default language for new and existing users who have not selected a personal preference.')
                                 ->schema([
                                     Select::make('default_locale')
@@ -159,10 +159,10 @@ class SystemSettings extends Page implements HasForms
                         ]),
 
                     // ── Appearance ───────────────────────────────────────────
-                    Tab::make('Appearance')
+                    Tab::make(__('Appearance'))
                         ->icon('heroicon-o-swatch')
                         ->schema([
-                            Section::make('Color Theme')
+                            Section::make(__('Color Theme'))
                                 ->description('Choose a color scheme for the admin panel. Save and refresh to apply.')
                                 ->schema([
                                     Radio::make('admin_theme')
@@ -177,7 +177,7 @@ class SystemSettings extends Page implements HasForms
                                         ->required(),
                                 ]),
 
-                            Section::make('Panel Mode')
+                            Section::make(__('Panel Mode'))
                                 ->description('Control the light/dark mode of the admin panel shell.')
                                 ->schema([
                                     Radio::make('admin_panel_theme_mode')
@@ -203,7 +203,7 @@ class SystemSettings extends Page implements HasForms
                                         ->required(),
                                 ]),
 
-                            Section::make('Branding')
+                            Section::make(__('Branding'))
                                 ->description('Upload logos and images. Run `php artisan storage:link` if images do not appear.')
                                 ->schema([
                                     Grid::make(3)->schema([
@@ -237,10 +237,10 @@ class SystemSettings extends Page implements HasForms
                         ]),
 
                     // ── Security ─────────────────────────────────────────────
-                    Tab::make('Security')
+                    Tab::make(__('Security'))
                         ->icon('heroicon-o-shield-check')
                         ->schema([
-                            Section::make('Two-Factor Authentication')
+                            Section::make(__('Two-Factor Authentication'))
                                 ->description('Applies firm-wide. Individual users still opt in from their own profile page — this is the master switch.')
                                 ->schema([
                                     Toggle::make('two_factor_enabled')
@@ -249,7 +249,7 @@ class SystemSettings extends Page implements HasForms
                                         ->helperText('Turning this off hides 2FA setup from every profile page and skips the login challenge for everyone, even users who previously enabled it.'),
                                 ]),
 
-                            Section::make('Google Sign-In')
+                            Section::make(__('Google Sign-In'))
                                 ->description('Lets users sign in with a Google account instead of a password. Leave blank to hide the "Continue with Google" button. Create credentials at console.cloud.google.com/apis/credentials.')
                                 ->schema([
                                     Grid::make(2)->schema([
@@ -273,10 +273,10 @@ class SystemSettings extends Page implements HasForms
                         ]),
 
                     // ── Email ────────────────────────────────────────────────
-                    Tab::make('Email')
+                    Tab::make(__('Email'))
                         ->icon('heroicon-o-envelope')
                         ->schema([
-                            Section::make('Sender')->schema([
+                            Section::make(__('Sender'))->schema([
                                 Grid::make(2)->schema([
                                     TextInput::make('mail_from_name')
                                         ->label(__('From Name'))
@@ -297,7 +297,7 @@ class SystemSettings extends Page implements HasForms
                                     ->helperText('Where system alerts are sent. Leave blank to disable.'),
                             ]),
 
-                            Section::make('Email Vendors')
+                            Section::make(__('Email Vendors'))
                                 ->description('Store several SMTP providers and switch the active one without re-entering credentials. Leave the active vendor on "Log only" (or give it no host) to keep writing mail to the log. Brevo uses smtp-relay.brevo.com on port 587 with TLS.')
                                 ->schema([
                                     Select::make('mail_active_vendor')
@@ -386,10 +386,10 @@ class SystemSettings extends Page implements HasForms
                         ]),
 
                     // ── Search Quotas ────────────────────────────────────────
-                    Tab::make('Search Quotas')
+                    Tab::make(__('Search Quotas'))
                         ->icon('heroicon-o-magnifying-glass')
                         ->schema([
-                            Section::make('Default Flight Search Limits')
+                            Section::make(__('Default Flight Search Limits'))
                                 ->description('Applies to every account with no paid subscription plan (see Subscription Plans, once configured). Flight search hits a paid provider API per request, so this protects against runaway cost.')
                                 ->schema([
                                     Grid::make(2)->schema([
@@ -409,7 +409,7 @@ class SystemSettings extends Page implements HasForms
                                     ]),
                                 ]),
 
-                            Section::make('Referral Program')
+                            Section::make(__('Referral Program'))
                                 ->description('Granted automatically to the referrer once the person they referred confirms their first booking — see Promotions for admin-issued codes.')
                                 ->schema([
                                     TextInput::make('referral_reward_bonus_searches')
@@ -420,7 +420,7 @@ class SystemSettings extends Page implements HasForms
                                         ->required(),
                                 ]),
 
-                            Section::make('New Customer Default')
+                            Section::make(__('New Customer Default'))
                                 ->description('Granted automatically the moment someone registers — no payment, and it never expires on its own (see Subscription Plans). Leave unset to keep new customers on the search limits above until they subscribe themselves.')
                                 ->schema([
                                     Select::make('signup_default_plan_id')
@@ -432,10 +432,10 @@ class SystemSettings extends Page implements HasForms
                         ]),
 
                     // ── Payments ─────────────────────────────────────────────
-                    Tab::make('Payments')
+                    Tab::make(__('Payments'))
                         ->icon('heroicon-o-credit-card')
                         ->schema([
-                            Section::make('Stripe')
+                            Section::make(__('Stripe'))
                                 ->description('Card payments via PaymentIntents + Elements — card details never touch this server. Get keys from the Stripe Dashboard → Developers → API keys, and create a webhook endpoint pointing at the URL below.')
                                 ->schema([
                                     Grid::make(2)->schema([
@@ -465,7 +465,7 @@ class SystemSettings extends Page implements HasForms
                                         ->helperText('Add this as an endpoint in the Stripe Dashboard, listening for payment_intent.succeeded, payment_intent.payment_failed and charge.refunded.'),
                                 ]),
 
-                            Section::make('PayPal')
+                            Section::make(__('PayPal'))
                                 ->description('Orders v2 (create → customer approves on PayPal → capture). Get credentials from developer.paypal.com → Apps & Credentials, and register a webhook pointing at the URL below.')
                                 ->schema([
                                     Select::make('paypal_mode')
@@ -500,7 +500,7 @@ class SystemSettings extends Page implements HasForms
                                         ->helperText('Subscribe it to PAYMENT.CAPTURE.COMPLETED, PAYMENT.CAPTURE.DENIED and PAYMENT.CAPTURE.REFUNDED.'),
                                 ]),
 
-                            Section::make('Booking Holds')
+                            Section::make(__('Booking Holds'))
                                 ->description('When a customer holds a fare but doesn\'t pay, the hold is released automatically after this window — or when the airline\'s fare quote expires, whichever comes first. The sweep runs every minute (bookings:expire-holds).')
                                 ->schema([
                                     TextInput::make('booking_hold_expiry_hours')
@@ -515,10 +515,10 @@ class SystemSettings extends Page implements HasForms
                         ]),
 
                     // ── Compliance ───────────────────────────────────────────
-                    Tab::make('Compliance')
+                    Tab::make(__('Compliance'))
                         ->icon('heroicon-o-scale')
                         ->schema([
-                            Section::make('Terms & Refund Policy')
+                            Section::make(__('Terms & Refund Policy'))
                                 ->description('The version is snapshotted onto every new booking at purchase time (Booking::terms_version) — bumping it here does not change which policy applied to an existing booking.')
                                 ->schema([
                                     TextInput::make('current_terms_version')
@@ -533,7 +533,7 @@ class SystemSettings extends Page implements HasForms
                                         ->helperText('Shown to customers at checkout for the version above.'),
                                 ]),
 
-                            Section::make('Data Retention')
+                            Section::make(__('Data Retention'))
                                 ->description('How long to keep high-volume operational records with no ongoing value — see App\Console\Commands\PruneRetentionData, run weekly. Bookings, payments and refunds are never pruned by this.')
                                 ->schema([
                                     TextInput::make('data_retention_days')
@@ -593,7 +593,7 @@ class SystemSettings extends Page implements HasForms
 
         Notification::make()
             ->success()
-            ->title('Settings saved')
+            ->title(__('Settings saved'))
             ->send();
     }
 

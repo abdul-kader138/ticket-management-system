@@ -51,11 +51,11 @@ class Reports extends Page
     {
         return [
             Action::make('export')
-                ->label('Export CSV')
+                ->label(__('Export CSV'))
                 ->icon('heroicon-o-arrow-down-tray')
                 ->action(fn (): StreamedResponse => $this->exportCsv()),
             Action::make('exportPdf')
-                ->label('Export PDF')
+                ->label(__('Export PDF'))
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('gray')
                 ->action(fn () => $this->exportPdf()),
@@ -157,18 +157,18 @@ class Reports extends Page
     {
         if (! $this->isStaff()) {
             return match ($this->reportType) {
-                'bookings' => 'My booking report',
-                'payments' => 'My payment report',
-                'fulfilment' => 'My ticket fulfilment report',
-                default => 'My account overview',
+                'bookings' => __('My booking report'),
+                'payments' => __('My payment report'),
+                'fulfilment' => __('My ticket fulfilment report'),
+                default => __('My account overview'),
             };
         }
 
         return match ($this->reportType) {
-            'bookings' => 'Booking report',
-            'payments' => 'Payment report',
-            'fulfilment' => 'Ticket fulfilment report',
-            default => 'Business overview',
+            'bookings' => __('Booking report'),
+            'payments' => __('Payment report'),
+            'fulfilment' => __('Ticket fulfilment report'),
+            default => __('Business overview'),
         };
     }
 
@@ -179,7 +179,7 @@ class Reports extends Page
         ['from' => $from, 'to' => $to] = $this->period();
         $filename = 'ticket-report-'.$this->reportType.'-'.$from->toDateString().'-'.$to->toDateString().'.csv';
 
-        Notification::make()->success()->title('Report generated')->send();
+        Notification::make()->success()->title(__('Report generated'))->send();
 
         return response()->streamDownload(function () use ($headers, $rows): void {
             $handle = fopen('php://output', 'w');

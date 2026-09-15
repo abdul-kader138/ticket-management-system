@@ -37,6 +37,16 @@ class SubscriptionPlanResource extends Resource
         return __('Subscription Plans');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('Subscription Plan');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Subscription Plans');
+    }
+
     protected static ?int $navigationSort = 10;
 
     public static function getNavigationGroup(): ?string
@@ -47,18 +57,20 @@ class SubscriptionPlanResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Plan')
+            Section::make(__('Plan'))
                 ->schema([
                     Grid::make(2)->schema([
                         TextInput::make('name')
+                            ->label(__('Name'))
                             ->required()
                             ->maxLength(100),
 
                         TextInput::make('code')
+                            ->label(__('Code'))
                             ->required()
                             ->maxLength(50)
                             ->unique(SubscriptionPlan::class, 'code', ignoreRecord: true)
-                            ->helperText('A short unique slug (e.g. "plus-monthly").'),
+                            ->helperText(__('A short unique slug (e.g. "plus-monthly").')),
                     ]),
 
                     Grid::make(3)->schema([
@@ -67,43 +79,47 @@ class SubscriptionPlanResource extends Resource
                             ->numeric()
                             ->minValue(0)
                             ->required()
-                            ->helperText('999 = $9.99'),
+                            ->helperText(__('999 = $9.99')),
 
                         TextInput::make('currency')
+                            ->label(__('Currency'))
                             ->default('USD')
                             ->maxLength(3)
                             ->required(),
 
                         Select::make('billing_interval')
-                            ->options(['month' => 'Monthly', 'year' => 'Yearly'])
+                            ->label(__('Billing interval'))
+                            ->options(['month' => __('Monthly'), 'year' => __('Yearly')])
                             ->default('month')
                             ->native(false)
                             ->required(),
                     ]),
 
-                    Toggle::make('is_active')->default(true),
+                    Toggle::make('is_active')->label(__('Is active'))->default(true),
                 ]),
 
-            Section::make('Search Quota Overrides')
-                ->description('Leave blank to fall back to the account-wide default (System Settings → Search Quotas). -1 means unlimited.')
+            Section::make(__('Search Quota Overrides'))
+                ->description(__('Leave blank to fall back to the account-wide default (System Settings → Search Quotas). -1 means unlimited.'))
                 ->schema([
                     Grid::make(2)->schema([
                         TextInput::make('daily_search_limit')
+                            ->label(__('Daily search limit'))
                             ->numeric()
-                            ->helperText('-1 = unlimited'),
+                            ->helperText(__('-1 = unlimited')),
 
                         TextInput::make('monthly_search_limit')
+                            ->label(__('Monthly search limit'))
                             ->numeric()
-                            ->helperText('-1 = unlimited'),
+                            ->helperText(__('-1 = unlimited')),
                     ]),
                 ]),
 
-            Section::make('Benefits')
-                ->description('Flat boolean perks, e.g. fee_free_changes = true. Read by SubscriptionService::hasBenefit().')
+            Section::make(__('Benefits'))
+                ->description(__('Flat boolean perks, e.g. fee_free_changes = true. Read by SubscriptionService::hasBenefit().'))
                 ->schema([
                     KeyValue::make('benefits')
-                        ->keyLabel('Benefit')
-                        ->valueLabel('Enabled (true/false)')
+                        ->keyLabel(__('Benefit'))
+                        ->valueLabel(__('Enabled (true/false)'))
                         ->default([]),
                 ]),
         ]);
@@ -113,14 +129,14 @@ class SubscriptionPlanResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')->searchable()->sortable(),
-                TextColumn::make('code')->badge(),
+                TextColumn::make('name')->label(__('Name'))->searchable()->sortable(),
+                TextColumn::make('code')->label(__('Code'))->badge(),
                 TextColumn::make('price_cents')
                     ->label(__('Price'))
                     ->formatStateUsing(fn (SubscriptionPlan $record) => "{$record->currency} ".number_format($record->price_cents / 100, 2).' / '.$record->billing_interval),
                 TextColumn::make('daily_search_limit')->label(__('Daily limit'))->formatStateUsing(fn (?int $state) => $state === null ? '—' : ($state === -1 ? __('Unlimited') : $state)),
                 TextColumn::make('monthly_search_limit')->label(__('Monthly limit'))->formatStateUsing(fn (?int $state) => $state === null ? '—' : ($state === -1 ? __('Unlimited') : $state)),
-                IconColumn::make('is_active')->boolean(),
+                IconColumn::make('is_active')->label(__('Is active'))->boolean(),
             ])
             ->defaultSort('price_cents')
             ->actions([EditAction::make(), DeleteAction::make()])

@@ -53,7 +53,7 @@ class BookingsByStatusChart extends ChartWidget
 
         return [
             'datasets' => [[
-                'label' => 'Bookings',
+                'label' => __('Bookings'),
                 'data' => array_values($counts),
                 'backgroundColor' => array_values(self::STATUS_COLOURS),
             ]],

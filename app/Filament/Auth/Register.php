@@ -91,6 +91,6 @@ class Register extends BaseRegister
         // see AppServiceProvider::boot(). This just surfaces the requirement
         // to the user instead of letting them find out from a rejected form.
         return parent::getPasswordFormComponent()
-            ->helperText('At least 8 characters, with uppercase, lowercase, and a number.');
+            ->helperText(__('At least 8 characters, with uppercase, lowercase, and a number.'));
     }
 }

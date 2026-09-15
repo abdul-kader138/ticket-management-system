@@ -43,6 +43,16 @@ class UserResource extends Resource
         return __('Users');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('User');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Users');
+    }
+
     protected static ?int $navigationSort = 10;
 
     // A real column — 'name' is a computed accessor (first_name + last_name),
@@ -63,7 +73,7 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Account')
+            Section::make(__('Account'))
                 ->schema([
                     TextInput::make('first_name')
                         ->label(__('First name'))
@@ -87,7 +97,7 @@ class UserResource extends Resource
                         ->options(['en' => __('English'), 'it' => __('Italiano'), 'bn' => __('বাংলা')])
                         ->placeholder(__('Use system default'))
                         ->native(false)
-                        ->helperText('Leave blank to follow the system default language.'),
+                        ->helperText(__('Leave blank to follow the system default language.')),
 
                     TextInput::make('password')
                         ->label(__('Password'))
@@ -98,7 +108,7 @@ class UserResource extends Resource
                         ->required(fn (string $operation) => $operation === 'create')
                         ->dehydrated(fn (?string $state) => filled($state))
                         ->dehydrateStateUsing(fn (string $state) => Hash::make($state))
-                        ->helperText('At least 8 characters, with uppercase, lowercase, and a number. Leave blank to keep the current password.'),
+                        ->helperText(__('At least 8 characters, with uppercase, lowercase, and a number. Leave blank to keep the current password.')),
 
                     TextInput::make('password_confirmation')
                         ->label(__('Confirm Password'))
@@ -118,15 +128,15 @@ class UserResource extends Resource
                     // is managed by verifying, not by this form.
                     Toggle::make('email_verified_at')
                         ->label(__('Email verified'))
-                        ->helperText('On: the user can sign in right away. Off: they must verify their email first.')
+                        ->helperText(__('On: the user can sign in right away. Off: they must verify their email first.'))
                         ->default(true)
                         ->visible(fn (string $operation) => $operation === 'create')
                         ->dehydrated(fn (string $operation) => $operation === 'create')
                         ->dehydrateStateUsing(fn ($state) => $state ? now() : null),
                 ])->columns(2),
 
-            Section::make('Roles')
-                ->description('What this user can access in the admin panel.')
+            Section::make(__('Roles'))
+                ->description(__('What this user can access in the admin panel.'))
                 ->schema([
                     Select::make('roles')
                         ->label(__('Roles'))
@@ -134,7 +144,7 @@ class UserResource extends Resource
                         ->relationship('roles', 'name')
                         ->options(fn () => Role::pluck('name', 'id'))
                         ->preload()
-                        ->helperText('What this user can access in the admin panel.')
+                        ->helperText(__('What this user can access in the admin panel.'))
                         // Goes through syncRoles() rather than Filament's default
                         // pivot ->sync() so RoleAttached/RoleDetached fire and
                         // the change lands in the audit log (see
@@ -166,39 +176,38 @@ class UserResource extends Resource
             ]))
             ->columns([
                 TextColumn::make('first_name')
-                    ->label('First name')
+                    ->label(__('First name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('last_name')
-                    ->label('Last name')
+                    ->label(__('Last name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('email')
+                    ->label(__('Email'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('roles.name')
-                    ->label('Roles')
+                TextColumn::make('roles.name')->label(__('Roles'))
                     ->badge()
                     ->separator(',')
                     ->color('primary'),
 
-                TextColumn::make('subscription')
-                    ->label('Plan')
+                TextColumn::make('subscription')->label(__('Plan'))
                     ->state(fn (User $record) => $record->subscriptions->first()?->subscriptionPlan?->name ?? '—')
                     ->badge()
                     ->color(fn (string $state) => $state === '—' ? 'gray' : 'success'),
 
                 TextColumn::make('email_verified_at')
-                    ->label('Verified')
+                    ->label(__('Verified'))
                     ->dateTime()
-                    ->placeholder('Not verified')
+                    ->placeholder(__('Not verified'))
                     ->toggleable(),
 
                 TextColumn::make('created_at')
-                    ->label('Joined')
+                    ->label(__('Joined'))
                     ->dateTime('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -216,7 +225,7 @@ class UserResource extends Resource
                 // so ends_at/the active-plan cache stay correct, rather
                 // than writing a UserSubscription row by hand.
                 Action::make('grantSubscription')
-                    ->label('Grant subscription')
+                    ->label(__('Grant subscription'))
                     ->icon('heroicon-o-gift')
                     ->color('success')
                     ->requiresConfirmation()
@@ -226,7 +235,7 @@ class UserResource extends Resource
                         && SubscriptionPlan::query()->active()->exists())
                     ->form([
                         Select::make('subscription_plan_id')
-                            ->label('Plan')
+                            ->label(__('Plan'))
                             ->options(fn () => SubscriptionPlan::query()->active()->orderBy('price_cents')->pluck('name', 'id'))
                             ->required(),
                     ])
@@ -236,14 +245,14 @@ class UserResource extends Resource
                                 $record,
                                 SubscriptionPlan::findOrFail($data['subscription_plan_id']),
                             );
-                            Notification::make()->success()->title('Subscription granted')->send();
+                            Notification::make()->success()->title(__('Subscription granted'))->send();
                         } catch (SubscriptionException $e) {
                             Notification::make()->danger()->title($e->getMessage())->send();
                         }
                     }),
 
                 Action::make('cancelSubscription')
-                    ->label('Cancel subscription')
+                    ->label(__('Cancel subscription'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
@@ -255,7 +264,7 @@ class UserResource extends Resource
 
                         try {
                             $subscriptions->cancel($subscriptions->activeSubscription($record));
-                            Notification::make()->success()->title('Subscription cancelled')->send();
+                            Notification::make()->success()->title(__('Subscription cancelled'))->send();
                         } catch (SubscriptionException $e) {
                             Notification::make()->danger()->title($e->getMessage())->send();
                         }

@@ -78,10 +78,10 @@ class MyBookings extends Page implements HasTable
                 ->with(['segments', 'passengers', 'payments']))
             ->defaultSort('created_at', 'desc')
             ->columns([
-                TextColumn::make('id')->label('Ref')->prefix('#')->sortable(),
+                TextColumn::make('id')->label(__('Ref'))->prefix('#')->sortable(),
 
                 TextColumn::make('route')
-                    ->label('Trip')
+                    ->label(__('Trip'))
                     ->getStateUsing(function (Booking $record): string {
                         $from = $record->segments->first()?->origin;
                         $to = $record->segments->last()?->destination;
@@ -90,70 +90,79 @@ class MyBookings extends Page implements HasTable
                     }),
 
                 TextColumn::make('departs')
-                    ->label('Departs')
+                    ->label(__('Departs'))
                     ->getStateUsing(fn (Booking $record) => $record->segments->first()?->departs_at?->format('d/m/Y H:i') ?? '—'),
 
-                TextColumn::make('status')
+                TextColumn::make('status')->label(__('Status'))
                     ->badge()
-                    ->formatStateUsing(fn (string $state) => ucfirst(str_replace('_', ' ', $state)))
+                    ->formatStateUsing(fn (string $state) => __(match ($state) {
+                        Booking::STATUS_HELD => 'Held',
+                        Booking::STATUS_PENDING_PAYMENT => 'Pending payment',
+                        Booking::STATUS_CONFIRMED => 'Confirmed',
+                        Booking::STATUS_CHANGED => 'Changed',
+                        Booking::STATUS_CANCELLED => 'Cancelled',
+                        Booking::STATUS_REFUNDED => 'Refunded',
+                        Booking::STATUS_EXPIRED => 'Expired',
+                        default => ucfirst(str_replace('_', ' ', $state)),
+                    }))
                     ->color(fn (string $state) => match ($state) {
                         Booking::STATUS_CONFIRMED => 'success',
                         Booking::STATUS_HELD, Booking::STATUS_PENDING_PAYMENT, Booking::STATUS_CHANGED => 'warning',
                         default => 'gray',
                     }),
 
-                TextColumn::make('pnr')->label('PNR')->placeholder('—'),
+                TextColumn::make('pnr')->label(__('PNR'))->placeholder('—'),
 
                 TextColumn::make('total_price_cents')
-                    ->label('Total')
+                    ->label(__('Total'))
                     ->formatStateUsing(fn (Booking $record) => "{$record->currency} ".number_format($record->total_price_cents / 100, 2)),
 
-                TextColumn::make('created_at')->label('Booked')->dateTime('d/m/Y H:i')->sortable(),
+                TextColumn::make('created_at')->label(__('Booked'))->dateTime('d/m/Y H:i')->sortable(),
             ])
             ->filters([
                 SelectFilter::make('status')->options([
-                    Booking::STATUS_HELD => 'Held',
-                    Booking::STATUS_PENDING_PAYMENT => 'Pending payment',
-                    Booking::STATUS_CONFIRMED => 'Confirmed',
-                    Booking::STATUS_CHANGED => 'Changed',
-                    Booking::STATUS_CANCELLED => 'Cancelled',
-                    Booking::STATUS_REFUNDED => 'Refunded',
-                    Booking::STATUS_EXPIRED => 'Expired',
+                    Booking::STATUS_HELD => __('Held'),
+                    Booking::STATUS_PENDING_PAYMENT => __('Pending payment'),
+                    Booking::STATUS_CONFIRMED => __('Confirmed'),
+                    Booking::STATUS_CHANGED => __('Changed'),
+                    Booking::STATUS_CANCELLED => __('Cancelled'),
+                    Booking::STATUS_REFUNDED => __('Refunded'),
+                    Booking::STATUS_EXPIRED => __('Expired'),
                 ]),
             ])
             ->actions([
                 ViewAction::make()
-                    ->modalHeading(fn (Booking $record) => "Booking #{$record->id}")
+                    ->modalHeading(fn (Booking $record) => __('Booking #:id', ['id' => $record->id]))
                     ->infolist([
-                        Section::make('Itinerary')
+                        Section::make(__('Itinerary'))
                             ->schema([
                                 RepeatableEntry::make('segments')
                                     ->label('')
                                     ->schema([
-                                        TextEntry::make('carrier_name')->label('Airline'),
-                                        TextEntry::make('flight_number')->label('Flight'),
-                                        TextEntry::make('origin')->label('From'),
-                                        TextEntry::make('destination')->label('To'),
-                                        TextEntry::make('departs_at')->label('Departs')->dateTime('d/m/Y H:i'),
-                                        TextEntry::make('arrives_at')->label('Arrives')->dateTime('d/m/Y H:i'),
+                                        TextEntry::make('carrier_name')->label(__('Airline')),
+                                        TextEntry::make('flight_number')->label(__('Flight')),
+                                        TextEntry::make('origin')->label(__('From')),
+                                        TextEntry::make('destination')->label(__('To')),
+                                        TextEntry::make('departs_at')->label(__('Departs'))->dateTime('d/m/Y H:i'),
+                                        TextEntry::make('arrives_at')->label(__('Arrives'))->dateTime('d/m/Y H:i'),
                                     ])
                                     ->columns(3),
                             ]),
 
-                        Section::make('Passengers')
+                        Section::make(__('Passengers'))
                             ->schema([
                                 RepeatableEntry::make('passengers')
                                     ->label('')
                                     ->schema([
                                         TextEntry::make('type')->badge(),
-                                        TextEntry::make('first_name')->label('First name'),
-                                        TextEntry::make('last_name')->label('Last name'),
-                                        TextEntry::make('ticket_number')->label('Ticket')->placeholder('—'),
+                                        TextEntry::make('first_name')->label(__('First name')),
+                                        TextEntry::make('last_name')->label(__('Last name')),
+                                        TextEntry::make('ticket_number')->label(__('Ticket'))->placeholder('—'),
                                     ])
                                     ->columns(4),
                             ]),
 
-                        Section::make('Payments')
+                        Section::make(__('Payments'))
                             ->schema([
                                 RepeatableEntry::make('payments')
                                     ->label('')
@@ -164,9 +173,9 @@ class MyBookings extends Page implements HasTable
                                             ->formatStateUsing(fn (string $state) => ucfirst(str_replace('_', ' ', $state)))
                                             ->color(fn (string $state) => str_contains($state, 'refund') ? 'warning' : ($state === 'succeeded' ? 'success' : 'gray')),
                                         TextEntry::make('amount_cents')
-                                            ->label('Amount')
+                                            ->label(__('Amount'))
                                             ->formatStateUsing(fn ($state, $record) => "{$record->currency} ".number_format($state / 100, 2)),
-                                        TextEntry::make('created_at')->label('Date')->dateTime('d/m/Y H:i'),
+                                        TextEntry::make('created_at')->label(__('Date'))->dateTime('d/m/Y H:i'),
                                     ])
                                     ->columns(4),
                             ])
@@ -174,19 +183,19 @@ class MyBookings extends Page implements HasTable
                     ]),
 
                 Action::make('downloadReceipt')
-                    ->label('Booking receipt')
+                    ->label(__('Booking receipt'))
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('gray')
                     ->action(fn (Booking $record) => app(ReceiptPdfService::class)->booking($record)),
 
                 Action::make('downloadTicket')
-                    ->label('Download ticket')
+                    ->label(__('Download ticket'))
                     ->icon('heroicon-o-ticket')
                     ->visible(fn (Booking $record) => in_array($record->status, [Booking::STATUS_CONFIRMED, Booking::STATUS_CHANGED], true))
                     ->action(fn (Booking $record) => app(ReceiptPdfService::class)->booking($record, ticket: true)),
 
                 Action::make('pay')
-                    ->label('Pay now')
+                    ->label(__('Pay now'))
                     ->icon('heroicon-o-credit-card')
                     ->color('primary')
                     ->visible(fn (Booking $record) => $record->status === Booking::STATUS_HELD && ! $record->hasExpired())
@@ -197,7 +206,7 @@ class MyBookings extends Page implements HasTable
                 // gateway webhook was slow or dropped, poll the gateway
                 // directly instead of waiting for the nightly reconcile.
                 Action::make('checkPayment')
-                    ->label('Check payment')
+                    ->label(__('Check payment'))
                     ->icon('heroicon-o-arrow-path')
                     ->color('gray')
                     ->visible(fn (Booking $record) => $record->status === Booking::STATUS_PENDING_PAYMENT)
@@ -231,7 +240,7 @@ class MyBookings extends Page implements HasTable
                     }),
 
                 Action::make('cancel')
-                    ->label('Cancel')
+                    ->label(__('Cancel'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
@@ -241,7 +250,7 @@ class MyBookings extends Page implements HasTable
                         Booking::STATUS_EXPIRED, Booking::STATUS_PENDING_PAYMENT,
                     ], true))
                     ->form([
-                        Textarea::make('reason')->label('Reason (optional)')->maxLength(500),
+                        Textarea::make('reason')->label(__('Reason (optional)'))->maxLength(500),
                     ])
                     ->action(function (Booking $record, array $data) {
                         try {

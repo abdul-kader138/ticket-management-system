@@ -60,10 +60,10 @@
 
             <div class="flex justify-end gap-3">
                 <x-filament::button tag="a" href="{{ \App\Filament\Pages\FlightSearch::getUrl() }}" color="gray">
-                    Back to search
+                    {{ __('Back to search') }}
                 </x-filament::button>
                 <x-filament::button wire:click="goToPassengers" icon="heroicon-o-arrow-right" icon-position="after">
-                    Continue
+                    {{ __('Continue') }}
                 </x-filament::button>
             </div>
         </div>
@@ -81,9 +81,9 @@
             {{ $this->form }}
 
             <div class="flex justify-between">
-                <x-filament::button type="button" color="gray" wire:click="backToReview">Back</x-filament::button>
+                <x-filament::button type="button" color="gray" wire:click="backToReview">{{ __('Back') }}</x-filament::button>
                 <x-filament::button type="submit" wire:loading.attr="disabled" wire:target="createHold" icon="heroicon-o-lock-closed">
-                    Hold this flight
+                    {{ __('Hold this flight') }}
                 </x-filament::button>
             </div>
         </form>
@@ -96,7 +96,7 @@
         <div class="mx-auto w-full max-w-xl space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
                 <span class="text-gray-500 dark:text-gray-400">
-                    Booking <span class="font-medium text-gray-950 dark:text-white">#{{ $b->id }}</span>
+                    {{ __('Booking') }} <span class="font-medium text-gray-950 dark:text-white">#{{ $b->id }}</span>
                     @php($first = $b->segments->first())
                     @php($last = $b->segments->last())
                     @if($first && $last)
@@ -107,8 +107,8 @@
                     <div x-data="{ left: {{ $secondsLeft }} }" x-init="const t = setInterval(() => { if (--left <= 0) clearInterval(t) }, 1000)"
                          style="display:inline-flex;align-items:center;gap:0.35rem;border-radius:9999px;padding:0.2rem 0.65rem;font-size:0.75rem;font-weight:500;background:rgb(var(--warning-500) / 0.12);color:rgb(var(--warning-700));">
                         <x-filament::icon icon="heroicon-o-clock" class="h-4 w-4" />
-                        <span x-show="left > 0">Hold expires in <span x-text="Math.floor(left / 60) + 'm ' + Math.max(0, left % 60) + 's'"></span></span>
-                        <span x-show="left <= 0" x-cloak style="color:rgb(var(--danger-600));">Hold expired — search again to rebook</span>
+                        <span x-show="left > 0">{{ __('Hold expires in') }} <span x-text="Math.floor(left / 60) + 'm ' + Math.max(0, left % 60) + 's'"></span></span>
+                        <span x-show="left <= 0" x-cloak style="color:rgb(var(--danger-600));">{{ __('Hold expired — search again to rebook') }}</span>
                     </div>
                 @endif
             </div>
@@ -118,7 +118,7 @@
             ])
 
             <p class="text-center text-xs text-gray-400">
-                <a href="{{ $bookingUrl($b->id) }}" class="hover:text-gray-600 hover:underline dark:hover:text-gray-300">View booking details</a>
+                <a href="{{ $bookingUrl($b->id) }}" class="hover:text-gray-600 hover:underline dark:hover:text-gray-300">{{ __('View booking details') }}</a>
             </p>
         </div>
     @endif
@@ -137,10 +137,10 @@
                 <div class="flex gap-3 pt-2">
                     <x-filament::button tag="a" color="gray"
                         href="{{ \App\Filament\Pages\FlightSearch::getUrl() }}">
-                        New search
+                        {{ __('New search') }}
                     </x-filament::button>
                     <x-filament::button tag="a" href="{{ $bookingUrl($b->id) }}">
-                        View booking
+                        {{ __('View booking') }}
                     </x-filament::button>
                 </div>
             </div>

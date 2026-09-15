@@ -18,6 +18,6 @@ class ResetPassword extends BaseResetPassword
     protected function getPasswordFormComponent(): Component
     {
         return parent::getPasswordFormComponent()
-            ->helperText('At least 8 characters, with uppercase, lowercase, and a number.');
+            ->helperText(__('At least 8 characters, with uppercase, lowercase, and a number.'));
     }
 }

@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'column.name' => 'Nome',
+    'column.guard_name' => 'Nome guard',
+    'column.team' => 'Team',
+    'column.roles' => 'Ruoli',
+    'column.permissions' => 'Permessi',
+    'column.updated_at' => 'Aggiornato il',
+    'field.name' => 'Nome',
+    'field.guard_name' => 'Nome guard',
+    'field.permissions' => 'Permessi',
+    'field.team' => 'Team',
+    'field.team.placeholder' => 'Seleziona un team ...',
+    'field.select_all.name' => 'Seleziona tutto',
+    'field.select_all.message' => 'Abilita/disabilita tutti i permessi per questo ruolo',
+    'nav.group' => 'Filament Shield',
+    'nav.role.label' => 'Ruoli',
+    'resource.label.role' => 'Ruolo',
+    'resource.label.roles' => 'Ruoli',
+    'section' => 'Entità',
+    'resources' => 'Risorse',
+    'widgets' => 'Widget',
+    'pages' => 'Pagine',
+    'custom' => 'Permessi personalizzati',
+];
