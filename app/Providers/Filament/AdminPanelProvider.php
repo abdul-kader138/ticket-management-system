@@ -10,6 +10,7 @@ use App\Filament\Auth\ResetPassword;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\FlightSearch;
 use App\Http\Middleware\RedirectNonAdminsFromDashboard;
+use App\Http\Middleware\SetLocale;
 use App\Models\Setting;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Enums\ThemeMode;
@@ -81,13 +82,13 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('15rem')
             ->navigationGroups([
-                NavigationGroup::make('Operations')
+                NavigationGroup::make(fn () => __('Operations'))
                     ->icon('heroicon-o-rectangle-stack'),
-                NavigationGroup::make('Billing')
+                NavigationGroup::make(fn () => __('Billing'))
                     ->icon('heroicon-o-banknotes'),
-                NavigationGroup::make('Reports')
+                NavigationGroup::make(fn () => __('Reports'))
                     ->icon('heroicon-o-chart-bar-square'),
-                NavigationGroup::make('Administration')
+                NavigationGroup::make(fn () => __('Administration'))
                     ->icon('heroicon-o-cog-6-tooth')
                     ->collapsed(),
             ])
@@ -102,6 +103,7 @@ class AdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
+                SetLocale::class,
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,

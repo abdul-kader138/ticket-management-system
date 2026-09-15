@@ -12,6 +12,7 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -58,6 +59,12 @@ class EditProfile extends BaseEditProfile
                                         $this->getLastNameFormComponent(),
                                     ]),
                                     $this->getEmailFormComponent(),
+                                    Select::make('locale')
+                                        ->label(__('Language'))
+                                        ->options(['en' => __('English'), 'it' => __('Italiano'), 'bn' => __('বাংলা')])
+                                        ->placeholder(__('Use system default'))
+                                        ->native(false)
+                                        ->helperText(__('This preference applies only to your account.')),
                                 ])
                                 ->columnSpan(2),
                         ]),

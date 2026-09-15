@@ -23,10 +23,12 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['first_name', 'last_name', 'email', 'phone', 'marketing_opt_in', 'password', 'avatar', 'google_id', 'email_verified_at'])]
+#[Fillable(['first_name', 'last_name', 'email', 'phone', 'marketing_opt_in', 'password', 'avatar', 'google_id', 'email_verified_at', 'locale'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, MustVerifyEmail
 {
+    public const SUPPORTED_LOCALES = ['en', 'it', 'bn'];
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, LogsActivity, Notifiable;
 

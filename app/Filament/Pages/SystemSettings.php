@@ -38,7 +38,7 @@ class SystemSettings extends Page implements HasForms
 
     public static function getNavigationLabel(): string
     {
-        return 'System Settings';
+        return __('System Settings');
     }
 
     public static function getNavigationGroup(): ?string
@@ -79,6 +79,7 @@ class SystemSettings extends Page implements HasForms
             // General
             'app_name' => Setting::get('app_name', 'Ticket Management System'),
             'app_tagline' => Setting::get('app_tagline', 'Track and resolve support tickets, end to end.'),
+            'default_locale' => Setting::get('default_locale', 'en'),
 
             // Appearance
             'admin_theme' => Setting::get('admin_theme', 'indigo'),
@@ -145,6 +146,16 @@ class SystemSettings extends Page implements HasForms
                                         ->label('Tagline')
                                         ->maxLength(200),
                                 ])->columns(2),
+
+                            Section::make('Language')
+                                ->description('Sets the default language for new and existing users who have not selected a personal preference.')
+                                ->schema([
+                                    Select::make('default_locale')
+                                        ->label(__('Default language'))
+                                        ->options(['en' => __('English'), 'it' => __('Italiano'), 'bn' => __('বাংলা')])
+                                        ->native(false)
+                                        ->required(),
+                                ]),
                         ]),
 
                     // ── Appearance ───────────────────────────────────────────
@@ -545,6 +556,7 @@ class SystemSettings extends Page implements HasForms
         $groups = [
             'app_name' => 'general',
             'app_tagline' => 'general',
+            'default_locale' => 'general',
             'admin_theme' => 'appearance',
             'admin_panel_theme_mode' => 'appearance',
             'app_logo' => 'appearance',

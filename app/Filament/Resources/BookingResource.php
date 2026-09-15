@@ -38,11 +38,16 @@ class BookingResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-ticket';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Bookings');
+    }
+
     protected static ?int $navigationSort = 10;
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Operations';
+        return __('Operations');
     }
 
     public static function table(Table $table): Table

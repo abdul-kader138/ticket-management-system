@@ -35,11 +35,16 @@ class PromotionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-gift';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Promotions');
+    }
+
     protected static ?int $navigationSort = 30;
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Billing';
+        return __('Billing');
     }
 
     public static function form(Form $form): Form

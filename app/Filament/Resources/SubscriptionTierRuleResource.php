@@ -32,11 +32,16 @@ class SubscriptionTierRuleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-trophy';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Subscription Tier Rules');
+    }
+
     protected static ?int $navigationSort = 20;
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Billing';
+        return __('Billing');
     }
 
     public static function form(Form $form): Form

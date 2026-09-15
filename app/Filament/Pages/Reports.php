@@ -17,7 +17,12 @@ class Reports extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar-square';
 
-    protected static ?string $navigationLabel = 'Reports';
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Reports');
+    }
 
     protected static ?string $navigationGroup = 'Reports';
 

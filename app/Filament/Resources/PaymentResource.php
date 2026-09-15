@@ -26,11 +26,16 @@ class PaymentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Payments');
+    }
+
     protected static ?int $navigationSort = 20;
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Operations';
+        return __('Operations');
     }
 
     public static function table(Table $table): Table

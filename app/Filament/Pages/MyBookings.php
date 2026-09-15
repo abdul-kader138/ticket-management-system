@@ -36,9 +36,19 @@ class MyBookings extends Page implements HasTable
 
     protected static ?string $navigationIcon = 'heroicon-o-ticket';
 
-    protected static ?string $navigationLabel = 'My Bookings';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $title = 'My Bookings';
+    protected static ?string $title = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('My Bookings');
+    }
+
+    public function getTitle(): string
+    {
+        return __('My Bookings');
+    }
 
     protected static ?string $slug = 'my-bookings';
 

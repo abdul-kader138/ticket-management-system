@@ -31,9 +31,19 @@ class MyPayments extends Page implements HasTable
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static ?string $navigationLabel = 'Payments';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $title = 'Payments';
+    protected static ?string $title = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Payments');
+    }
+
+    public function getTitle(): string
+    {
+        return __('Payments');
+    }
 
     protected static ?string $slug = 'my-payments';
 

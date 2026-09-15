@@ -38,6 +38,11 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Users');
+    }
+
     protected static ?int $navigationSort = 10;
 
     // A real column — 'name' is a computed accessor (first_name + last_name),
@@ -47,7 +52,7 @@ class UserResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Administration';
+        return __('Administration');
     }
 
     public static function getGloballySearchableAttributes(): array
@@ -76,6 +81,13 @@ class UserResource extends Resource
                         ->required()
                         ->maxLength(255)
                         ->unique(User::class, 'email', ignoreRecord: true),
+
+                    Select::make('locale')
+                        ->label(__('Language'))
+                        ->options(['en' => __('English'), 'it' => __('Italiano'), 'bn' => __('বাংলা')])
+                        ->placeholder(__('Use system default'))
+                        ->native(false)
+                        ->helperText('Leave blank to follow the system default language.'),
 
                     TextInput::make('password')
                         ->label('Password')

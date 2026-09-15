@@ -32,6 +32,11 @@ class FlightProviderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-server-stack';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Flight Providers');
+    }
+
     protected static ?int $navigationSort = 20;
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -53,7 +58,7 @@ class FlightProviderResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Administration';
+        return __('Administration');
     }
 
     public static function form(Form $form): Form

@@ -16,9 +16,19 @@ class FlightSearch extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-paper-airplane';
 
-    protected static ?string $navigationLabel = 'Search Flights';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $title = 'Search Flights';
+    protected static ?string $title = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Search Flights');
+    }
+
+    public function getTitle(): string
+    {
+        return __('Search Flights');
+    }
 
     protected static ?string $slug = 'flights';
 
