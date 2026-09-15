@@ -16,6 +16,7 @@ return [
     'field.select_all.message' => 'Abilita/disabilita tutti i permessi per questo ruolo',
     'nav.group' => 'Filament Shield',
     'nav.role.label' => 'Ruoli',
+    'nav.role.icon' => 'heroicon-o-shield-check',
     'resource.label.role' => 'Ruolo',
     'resource.label.roles' => 'Ruoli',
     'section' => 'Entità',
@@ -23,4 +24,12 @@ return [
     'widgets' => 'Widget',
     'pages' => 'Pagine',
     'custom' => 'Permessi personalizzati',
+    'forbidden' => 'Non hai il permesso di accedere',
+    'resource_permission_prefixes_labels' => [
+        'view' => 'Visualizza', 'view_any' => 'Visualizza tutti', 'create' => 'Crea',
+        'update' => 'Aggiorna', 'delete' => 'Elimina', 'delete_any' => 'Elimina tutti',
+        'force_delete' => 'Elimina definitivamente', 'force_delete_any' => 'Elimina definitivamente tutti',
+        'restore' => 'Ripristina', 'reorder' => 'Riordina', 'restore_any' => 'Ripristina tutti',
+        'replicate' => 'Duplica',
+    ],
 ];

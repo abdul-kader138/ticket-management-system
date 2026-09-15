@@ -24,7 +24,10 @@ class Reports extends Page
         return __('Reports');
     }
 
-    protected static ?string $navigationGroup = 'Reports';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Reports');
+    }
 
     protected static ?int $navigationSort = 1;
 

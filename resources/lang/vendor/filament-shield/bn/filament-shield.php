@@ -16,6 +16,7 @@ return [
     'field.select_all.message' => 'এই ভূমিকার সব অনুমতি সক্রিয়/নিষ্ক্রিয় করে',
     'nav.group' => 'ফিলামেন্ট শিল্ড',
     'nav.role.label' => 'ভূমিকা',
+    'nav.role.icon' => 'heroicon-o-shield-check',
     'resource.label.role' => 'ভূমিকা',
     'resource.label.roles' => 'ভূমিকা',
     'section' => 'সত্তা',
@@ -23,4 +24,12 @@ return [
     'widgets' => 'উইজেট',
     'pages' => 'পেজ',
     'custom' => 'কাস্টম অনুমতি',
+    'forbidden' => 'এই পেজে প্রবেশের অনুমতি নেই',
+    'resource_permission_prefixes_labels' => [
+        'view' => 'দেখুন', 'view_any' => 'সব দেখুন', 'create' => 'তৈরি করুন',
+        'update' => 'আপডেট করুন', 'delete' => 'মুছুন', 'delete_any' => 'সব মুছুন',
+        'force_delete' => 'স্থায়ীভাবে মুছুন', 'force_delete_any' => 'সব স্থায়ীভাবে মুছুন',
+        'restore' => 'পুনরুদ্ধার করুন', 'reorder' => 'ক্রম পরিবর্তন করুন', 'restore_any' => 'সব পুনরুদ্ধার করুন',
+        'replicate' => 'অনুলিপি করুন',
+    ],
 ];

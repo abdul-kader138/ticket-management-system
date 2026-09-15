@@ -62,7 +62,7 @@
             @foreach([
                 [__('Bookings'), number_format($summary['bookings']), 'heroicon-o-ticket'],
                 [__('Confirmed'), number_format($summary['confirmed']), 'heroicon-o-check-circle'],
-                ['Net revenue', $summary['currency'].' '.number_format($summary['net'] / 100, 2), 'heroicon-o-banknotes'],
+                [__('Net revenue'), $summary['currency'].' '.number_format($summary['net'] / 100, 2), 'heroicon-o-banknotes'],
                     [auth()->user()->hasRole('super_admin') || auth()->user()->getAllPermissions()->isNotEmpty() ? __('Customers') : __('Account'), number_format($summary['customers']), 'heroicon-o-users'],
             ] as [$label, $value, $icon])
                 <x-filament::section>
@@ -74,7 +74,7 @@
             @endforeach
         </div>
 
-        <x-filament::section :heading="$this->reportTitle()" :description="'Showing data from '.$this->period()['from']->toDateString().' through '.$this->period()['to']->toDateString()">
+        <x-filament::section :heading="$this->reportTitle()" :description="__('Showing data from :from through :to', ['from' => $this->period()['from']->toDateString(), 'to' => $this->period()['to']->toDateString()])">
             @if($this->reportType === 'overview')
                 <div class="grid gap-4 md:grid-cols-3">
                     <div><span class="text-sm text-gray-500">{{ __('Payments processed') }}</span><p class="text-lg font-semibold">{{ number_format($summary['payments']) }}</p></div>

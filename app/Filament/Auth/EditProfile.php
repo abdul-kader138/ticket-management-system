@@ -124,12 +124,12 @@ class EditProfile extends BaseEditProfile
     private function twoFactorStatusText(): string
     {
         if (! $this->twoFactorGloballyEnabled()) {
-            return 'Two-factor authentication is currently disabled application-wide by an administrator.';
+            return __('Two-factor authentication is currently disabled application-wide by an administrator.');
         }
 
         return $this->getUser()->hasEnabledTwoFactorAuthentication()
-            ? 'Two-factor authentication is enabled on your account.'
-            : 'Two-factor authentication is not enabled on your account.';
+            ? __('Two-factor authentication is enabled on your account.')
+            : __('Two-factor authentication is not enabled on your account.');
     }
 
     private function twoFactorGloballyEnabled(): bool
@@ -165,7 +165,7 @@ class EditProfile extends BaseEditProfile
                 ->color('gray')
                 ->visible($isEnabled)
                 ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Close')
+                ->modalCancelActionLabel(__('Close'))
                 ->modalContent(fn () => view('filament.auth.recovery-codes-modal', [
                     'codes' => $user->two_factor_recovery_codes ?? [],
                 ])),
@@ -176,7 +176,7 @@ class EditProfile extends BaseEditProfile
                 ->color('gray')
                 ->visible($isEnabled)
                 ->requiresConfirmation()
-                ->modalDescription('Your existing recovery codes will stop working immediately.')
+                ->modalDescription(__('Your existing recovery codes will stop working immediately.'))
                 ->action(function () use ($user) {
                     $user->forceFill([
                         'two_factor_recovery_codes' => app(TwoFactorAuthenticationService::class)->generateRecoveryCodes(),
@@ -191,8 +191,8 @@ class EditProfile extends BaseEditProfile
                 ->color('danger')
                 ->visible($isEnabled)
                 ->requiresConfirmation()
-                ->modalHeading('Disable two-factor authentication?')
-                ->modalDescription('You will no longer be asked for a code when signing in.')
+                ->modalHeading(__('Disable two-factor authentication?'))
+                ->modalDescription(__('You will no longer be asked for a code when signing in.'))
                 ->action(function () use ($user) {
                     $user->forceFill([
                         'two_factor_secret' => null,
@@ -219,7 +219,7 @@ class EditProfile extends BaseEditProfile
                     ->label(__('Scan this with your authenticator app'))
                     ->content(fn (Get $get) => new HtmlString(
                         '<div style="display:flex;flex-direction:column;align-items:center;gap:.5rem;">'
-                        .'<img src="'.$service->qrCodeSvg($user, (string) $get('secret')).'" alt="Two-factor setup QR code" />'
+                        .'<img src="'.$service->qrCodeSvg($user, (string) $get('secret')).'" alt="'.e(__('Two-factor setup QR code')).'" />'
                         .'<code style="font-size:.75rem;">'.e((string) $get('secret')).'</code>'
                         .'</div>'
                     )),
@@ -231,7 +231,7 @@ class EditProfile extends BaseEditProfile
                     ->extraInputAttributes(['inputmode' => 'numeric'])
                     ->rule(fn (Get $get) => function (string $attribute, mixed $value, \Closure $fail) use ($service, $get) {
                         if (! $service->verify((string) $get('secret'), (string) $value)) {
-                            $fail('The provided code was invalid.');
+                            $fail(__('The provided code was invalid.'));
                         }
                     }),
             ])

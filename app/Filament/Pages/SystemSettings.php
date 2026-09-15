@@ -135,7 +135,7 @@ class SystemSettings extends Page implements HasForms
                         ->icon('heroicon-o-home')
                         ->schema([
                             Section::make(__('Application'))
-                                ->description('Shown in the admin panel header and on the login page.')
+                                ->description(__('Shown in the admin panel header and on the login page.'))
                                 ->schema([
                                     TextInput::make('app_name')
                                         ->label(__('Application Name'))
@@ -148,7 +148,7 @@ class SystemSettings extends Page implements HasForms
                                 ])->columns(2),
 
                             Section::make(__('Language'))
-                                ->description('Sets the default language for new and existing users who have not selected a personal preference.')
+                                ->description(__('Sets the default language for new and existing users who have not selected a personal preference.'))
                                 ->schema([
                                     Select::make('default_locale')
                                         ->label(__('Default language'))
@@ -163,11 +163,11 @@ class SystemSettings extends Page implements HasForms
                         ->icon('heroicon-o-swatch')
                         ->schema([
                             Section::make(__('Color Theme'))
-                                ->description('Choose a color scheme for the admin panel. Save and refresh to apply.')
+                                        ->description(__('Choose a color scheme for the admin panel. Save and refresh to apply.'))
                                 ->schema([
                                     Radio::make('admin_theme')
                                         ->label(__('Admin Panel Theme'))
-                                        ->helperText('The selected theme applies to all admin panel pages.')
+                                        ->helperText(__('The selected theme applies to all admin panel pages.'))
                                         ->options(
                                             collect(AdminPanelProvider::$themes)
                                                 ->mapWithKeys(fn ($t, $key) => [$key => $t['label']])
@@ -178,11 +178,11 @@ class SystemSettings extends Page implements HasForms
                                 ]),
 
                             Section::make(__('Panel Mode'))
-                                ->description('Control the light/dark mode of the admin panel shell.')
+                                ->description(__('Control the light/dark mode of the admin panel shell.'))
                                 ->schema([
                                     Radio::make('admin_panel_theme_mode')
                                         ->label(__('Admin Panel Mode'))
-                                        ->helperText('Changes take effect after saving and refreshing.')
+                                        ->helperText(__('Changes take effect after saving and refreshing.'))
                                         ->options([
                                             'light' => 'Light',
                                             'dark' => 'Dark',
@@ -204,7 +204,7 @@ class SystemSettings extends Page implements HasForms
                                 ]),
 
                             Section::make(__('Branding'))
-                                ->description('Upload logos and images. Run `php artisan storage:link` if images do not appear.')
+                                ->description(__('Upload logos and images. Run `php artisan storage:link` if images do not appear.'))
                                 ->schema([
                                     Grid::make(3)->schema([
                                         FileUpload::make('app_logo')
@@ -213,7 +213,7 @@ class SystemSettings extends Page implements HasForms
                                             ->disk('public')
                                             ->directory('branding')
                                             ->visibility('public')
-                                            ->helperText('Shown in the admin panel sidebar header. Leave blank to use the application name as text.'),
+                                            ->helperText(__('Shown in the admin panel sidebar header. Leave blank to use the application name as text.')),
 
                                         FileUpload::make('app_icon')
                                             ->label(__('App Icon / Favicon'))
@@ -222,7 +222,7 @@ class SystemSettings extends Page implements HasForms
                                             ->directory('branding')
                                             ->visibility('public')
                                             ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml'])
-                                            ->helperText('Browser tab icon.'),
+                                            ->helperText(__('Browser tab icon.')),
 
                                         FileUpload::make('favicon')
                                             ->label(__('Favicon (alternative)'))
@@ -231,7 +231,7 @@ class SystemSettings extends Page implements HasForms
                                             ->directory('branding')
                                             ->visibility('public')
                                             ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml'])
-                                            ->helperText('Overrides the app icon for browser tabs.'),
+                                            ->helperText(__('Overrides the app icon for browser tabs.')),
                                     ]),
                                 ]),
                         ]),
@@ -241,16 +241,16 @@ class SystemSettings extends Page implements HasForms
                         ->icon('heroicon-o-shield-check')
                         ->schema([
                             Section::make(__('Two-Factor Authentication'))
-                                ->description('Applies firm-wide. Individual users still opt in from their own profile page — this is the master switch.')
+                                ->description(__('Applies firm-wide. Individual users still opt in from their own profile page — this is the master switch.'))
                                 ->schema([
                                     Toggle::make('two_factor_enabled')
                                         ->label(__('Allow two-factor authentication'))
                                         ->default(true)
-                                        ->helperText('Turning this off hides 2FA setup from every profile page and skips the login challenge for everyone, even users who previously enabled it.'),
+                                        ->helperText(__('Turning this off hides 2FA setup from every profile page and skips the login challenge for everyone, even users who previously enabled it.')),
                                 ]),
 
                             Section::make(__('Google Sign-In'))
-                                ->description('Lets users sign in with a Google account instead of a password. Leave blank to hide the "Continue with Google" button. Create credentials at console.cloud.google.com/apis/credentials.')
+                                ->description(__('Lets users sign in with a Google account instead of a password. Leave blank to hide the "Continue with Google" button. Create credentials at console.cloud.google.com/apis/credentials.'))
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('google_client_id')
@@ -266,9 +266,9 @@ class SystemSettings extends Page implements HasForms
                                     ]),
 
                                     Placeholder::make('google_redirect_uri')
-                                        ->label('Authorized redirect URI')
+                                        ->label(__('Authorized redirect URI'))
                                         ->content(fn () => route('auth.google.callback'))
-                                        ->helperText('Add this exact URL to the OAuth client\'s "Authorized redirect URIs" in Google Cloud Console.'),
+                                            ->helperText(__('Add this exact URL to the OAuth client\'s "Authorized redirect URIs" in Google Cloud Console.')),
                                 ]),
                         ]),
 
@@ -601,7 +601,7 @@ class SystemSettings extends Page implements HasForms
     {
         return [
             Action::make('save')
-                ->label('Save')
+                ->label(__('Save'))
                 ->submit('save'),
         ];
     }

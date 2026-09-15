@@ -21,22 +21,22 @@
 </head>
 <body>
     <h1>{{ $title }}</h1>
-    <div class="period">Period: {{ $from->toDateString() }} to {{ $to->toDateString() }}</div>
+    <div class="period">{{ __('Showing data from :from through :to', ['from' => $from->toDateString(), 'to' => $to->toDateString()]) }}</div>
 
     <div class="cards">
-        <div class="card"><div class="label">Bookings</div><div class="value">{{ number_format($summary['bookings']) }}</div></div>
-        <div class="card"><div class="label">Confirmed</div><div class="value">{{ number_format($summary['confirmed']) }}</div></div>
-        <div class="card"><div class="label">Net revenue</div><div class="value">{{ $summary['currency'] }} {{ number_format($summary['net'] / 100, 2) }}</div></div>
-        <div class="card"><div class="label">{{ auth()->user()->hasRole('super_admin') || auth()->user()->getAllPermissions()->isNotEmpty() ? 'Customers' : 'Account' }}</div><div class="value">{{ number_format($summary['customers']) }}</div></div>
+        <div class="card"><div class="label">{{ __('Bookings') }}</div><div class="value">{{ number_format($summary['bookings']) }}</div></div>
+        <div class="card"><div class="label">{{ __('Confirmed') }}</div><div class="value">{{ number_format($summary['confirmed']) }}</div></div>
+        <div class="card"><div class="label">{{ __('Net revenue') }}</div><div class="value">{{ $summary['currency'] }} {{ number_format($summary['net'] / 100, 2) }}</div></div>
+        <div class="card"><div class="label">{{ auth()->user()->hasRole('super_admin') || auth()->user()->getAllPermissions()->isNotEmpty() ? __('Customers') : __('Account') }}</div><div class="value">{{ number_format($summary['customers']) }}</div></div>
     </div>
 
     @if($rows === [])
         <table class="overview">
-            <tr><td><strong>Payments processed</strong><br>{{ number_format($summary['payments']) }}</td><td><strong>Gross revenue</strong><br>{{ $summary['currency'] }} {{ number_format($summary['gross'] / 100, 2) }}</td><td><strong>Refunds</strong><br>{{ $summary['currency'] }} {{ number_format($summary['refunds'] / 100, 2) }}</td></tr>
+            <tr><td><strong>{{ __('Payments processed') }}</strong><br>{{ number_format($summary['payments']) }}</td><td><strong>{{ __('Gross revenue') }}</strong><br>{{ $summary['currency'] }} {{ number_format($summary['gross'] / 100, 2) }}</td><td><strong>{{ __('Refunds') }}</strong><br>{{ $summary['currency'] }} {{ number_format($summary['refunds'] / 100, 2) }}</td></tr>
         </table>
     @else
         <table>
-            <thead><tr>@foreach(array_keys($rows[0]) as $heading)<th>{{ ucfirst(str_replace('_', ' ', $heading)) }}</th>@endforeach</tr></thead>
+            <thead><tr>@foreach(array_keys($rows[0]) as $heading)<th>{{ __(ucfirst(str_replace('_', ' ', $heading))) }}</th>@endforeach</tr></thead>
             <tbody>@foreach($rows as $row)<tr>@foreach($row as $value)<td>{{ $value }}</td>@endforeach</tr>@endforeach</tbody>
         </table>
     @endif

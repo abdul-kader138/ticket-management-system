@@ -76,7 +76,7 @@ class ChangeBooking extends Page implements HasForms
         );
 
         if (! in_array($booking->status, [Booking::STATUS_CONFIRMED, Booking::STATUS_CHANGED], true)) {
-            Notification::make()->danger()->title('Only a confirmed booking can be changed.')->send();
+            Notification::make()->danger()->title(__('Only a confirmed booking can be changed.'))->send();
             $this->redirect(BookingResource::getUrl('view', ['record' => $booking->id]));
 
             return;
@@ -188,7 +188,7 @@ class ChangeBooking extends Page implements HasForms
 
             if (! $origin || ! $destination) {
                 Notification::make()->danger()
-                    ->title('Leg '.($index + 1).': use a 3-letter airport code for both fields.')
+                    ->title(__('Leg :number: use a 3-letter airport code for both fields.', ['number' => $index + 1]))
                     ->send();
 
                 return;
@@ -202,13 +202,13 @@ class ChangeBooking extends Page implements HasForms
         try {
             $offers = app(BookingChangeService::class)->searchOffers($this->booking, $criteria)->toArray();
         } catch (BookingException|DuffelApiException $e) {
-            Notification::make()->danger()->title('Could not fetch change offers')->body($e->getMessage())->send();
+            Notification::make()->danger()->title(__('Could not fetch change offers'))->body($e->getMessage())->send();
 
             return;
         }
 
         if ($offers === []) {
-            Notification::make()->warning()->title('No change offers for that itinerary.')->send();
+            Notification::make()->warning()->title(__('No change offers for that itinerary.'))->send();
 
             return;
         }
@@ -237,7 +237,7 @@ class ChangeBooking extends Page implements HasForms
         try {
             $result = app(BookingChangeService::class)->applyChange($booking, $changeOfferId, auth()->user(), $gateway);
         } catch (BookingException|DuffelApiException $e) {
-            Notification::make()->danger()->title('Could not apply this change')->body($e->getMessage())->send();
+            Notification::make()->danger()->title(__('Could not apply this change'))->body($e->getMessage())->send();
 
             return;
         }
@@ -249,7 +249,7 @@ class ChangeBooking extends Page implements HasForms
 
         if (! $payment) {
             $this->step = 4;
-            Notification::make()->success()->title('Booking changed')->body('No fare difference to collect.')->send();
+            Notification::make()->success()->title(__('Booking changed'))->body(__('No fare difference to collect.'))->send();
 
             return;
         }
@@ -259,7 +259,7 @@ class ChangeBooking extends Page implements HasForms
         $this->step = 3;
 
         Notification::make()->success()
-            ->title('Change applied — fare difference due')
+            ->title(__('Change applied — fare difference due'))
             ->body('Collect '.$booking->currency.' '.number_format($payment->amount_cents / 100, 2).' to finish.')
             ->send();
     }
@@ -274,7 +274,7 @@ class ChangeBooking extends Page implements HasForms
         $this->step = 4;
 
         Notification::make()->success()
-            ->title('Fare difference paid')
+            ->title(__('Fare difference paid'))
             ->body("Booking #{$this->bookingId} change is complete.")
             ->send();
     }
