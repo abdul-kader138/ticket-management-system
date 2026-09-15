@@ -151,8 +151,20 @@ class PaymentService
      */
     public function capturePayPalOrder(Payment $payment): array
     {
-        $gateway = $this->gateways->get(Payment::GATEWAY_PAYPAL);
-        $result = $gateway->capture($payment);
+        if ($payment->gateway !== Payment::GATEWAY_PAYPAL) {
+            throw new PaymentException('This payment is not a PayPal payment.');
+        }
+
+        if (! $payment->gateway_reference || $payment->status !== Payment::STATUS_PENDING) {
+            throw new PaymentException('This payment is no longer available for capture.');
+        }
+
+        try {
+            $gateway = $this->gateways->get(Payment::GATEWAY_PAYPAL);
+            $result = $gateway->capture($payment);
+        } catch (Throwable $e) {
+            throw new PaymentException('Could not capture PayPal payment: '.$e->getMessage(), previous: $e);
+        }
 
         if (($result['status'] ?? null) === 'COMPLETED') {
             $this->markSucceeded($payment, $payment->amount_cents);
@@ -248,6 +260,21 @@ class PaymentService
     {
         if ($payment->isSucceeded()) {
             return; // Already processed — a duplicate webhook delivery.
+        }
+
+        // Never fulfil a booking from an event whose amount differs from the
+        // immutable local payment row.
+        if ($amountCents !== $payment->amount_cents) {
+            Log::stack(['stack', 'audit'])->critical('Payment amount mismatch; refusing fulfilment', [
+                'payment_id' => $payment->id,
+                'gateway' => $payment->gateway,
+                'expected_amount_cents' => $payment->amount_cents,
+                'received_amount_cents' => $amountCents,
+            ]);
+
+            $this->markFailed($payment);
+
+            return;
         }
 
         $payment->update(['status' => Payment::STATUS_SUCCEEDED]);

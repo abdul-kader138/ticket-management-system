@@ -253,6 +253,7 @@
                                     <label class="block text-xs text-[var(--muted)]">Flight Date</label>
                                     <input
                                         type="date"
+                                        lang="en-GB"
                                         :name="'legs[' + idx + '][date]'"
                                         x-model="leg.date"
                                         :min="today"

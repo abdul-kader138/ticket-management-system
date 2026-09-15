@@ -4,6 +4,8 @@ namespace App\Filament\Resources\PaymentResource\Pages;
 
 use App\Filament\Resources\PaymentResource;
 use App\Models\Payment;
+use App\Services\Receipts\ReceiptPdfService;
+use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
@@ -24,7 +26,12 @@ class ViewPayment extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Action::make('downloadReceipt')
+                ->label('Download receipt')
+                ->icon('heroicon-o-document-arrow-down')
+                ->action(fn (Payment $record) => app(ReceiptPdfService::class)->payment($record)),
+        ];
     }
 
     public function infolist(Infolist $infolist): Infolist

@@ -179,7 +179,7 @@ class PayPalGateway implements PaymentGatewayContract
 
     private function baseUrl(): string
     {
-        return Setting::get('paypal_mode', 'sandbox') === 'live'
+        return Setting::get('paypal_mode', config('services.paypal.mode', 'sandbox')) === 'live'
             ? 'https://api-m.paypal.com'
             : 'https://api-m.sandbox.paypal.com';
     }
@@ -205,16 +205,16 @@ class PayPalGateway implements PaymentGatewayContract
 
     private function clientId(): ?string
     {
-        return Setting::get('paypal_client_id');
+        return Setting::get('paypal_client_id', config('services.paypal.client_id'));
     }
 
     private function clientSecret(): ?string
     {
-        return Setting::get('paypal_client_secret');
+        return Setting::get('paypal_client_secret', config('services.paypal.secret'));
     }
 
     private function webhookId(): ?string
     {
-        return Setting::get('paypal_webhook_id');
+        return Setting::get('paypal_webhook_id', config('services.paypal.webhook_id'));
     }
 }

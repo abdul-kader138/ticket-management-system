@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\UserSubscription;
+use App\Services\Receipts\ReceiptPdfService;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
@@ -142,6 +143,12 @@ class MyPayments extends Page implements HasTable
                             ])
                             ->visible(fn (Payment $record) => $record->refunds->isNotEmpty()),
                     ]),
+
+                Action::make('downloadReceipt')
+                    ->label('Download receipt')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('gray')
+                    ->action(fn (Payment $record) => app(ReceiptPdfService::class)->payment($record)),
 
                 Action::make('viewBooking')
                     ->label('View booking')

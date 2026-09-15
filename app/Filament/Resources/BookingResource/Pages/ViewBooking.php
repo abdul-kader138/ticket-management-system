@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Services\Bookings\BookingException;
 use App\Services\Bookings\CancellationService;
 use App\Services\Payments\PaymentService;
+use App\Services\Receipts\ReceiptPdfService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -34,6 +35,16 @@ class ViewBooking extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('downloadReceipt')
+                ->label('Booking receipt')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('gray')
+                ->action(fn (Booking $record) => app(ReceiptPdfService::class)->booking($record)),
+            Action::make('downloadTicket')
+                ->label('Download ticket')
+                ->icon('heroicon-o-ticket')
+                ->visible(fn (Booking $record) => in_array($record->status, [Booking::STATUS_CONFIRMED, Booking::STATUS_CHANGED], true))
+                ->action(fn (Booking $record) => app(ReceiptPdfService::class)->booking($record, ticket: true)),
             Action::make('takePayment')
                 ->label('Take payment')
                 ->icon('heroicon-o-credit-card')

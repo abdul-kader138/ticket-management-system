@@ -9,6 +9,7 @@ use App\Filament\Auth\Register;
 use App\Filament\Auth\ResetPassword;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\FlightSearch;
+use App\Http\Middleware\RedirectNonAdminsFromDashboard;
 use App\Models\Setting;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Enums\ThemeMode;
@@ -84,6 +85,8 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-rectangle-stack'),
                 NavigationGroup::make('Billing')
                     ->icon('heroicon-o-banknotes'),
+                NavigationGroup::make('Reports')
+                    ->icon('heroicon-o-chart-bar-square'),
                 NavigationGroup::make('Administration')
                     ->icon('heroicon-o-cog-6-tooth')
                     ->collapsed(),
@@ -130,7 +133,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->authMiddleware([
                 Authenticate::class,
-                \App\Http\Middleware\RedirectNonAdminsFromDashboard::class,
+                RedirectNonAdminsFromDashboard::class,
             ]);
     }
 

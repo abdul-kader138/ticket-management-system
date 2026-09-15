@@ -88,8 +88,16 @@ class PaymentResource extends Resource
                 Filter::make('created_at')
                     ->label('Created between')
                     ->form([
-                        DatePicker::make('created_from')->native(false),
-                        DatePicker::make('created_until')->native(false),
+                        DatePicker::make('created_from')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->placeholder('dd/mm/yyyy'),
+                        DatePicker::make('created_until')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->placeholder('dd/mm/yyyy'),
                     ])
                     ->query(fn (Builder $query, array $data) => $query
                         ->when($data['created_from'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '>=', $date))

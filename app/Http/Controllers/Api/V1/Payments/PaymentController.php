@@ -41,7 +41,11 @@ class PaymentController extends Controller
             return response()->json(['message' => 'This payment is not a PayPal payment.'], 422);
         }
 
-        $result = $payments->capturePayPalOrder($payment);
+        try {
+            $result = $payments->capturePayPalOrder($payment);
+        } catch (PaymentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return response()->json($result);
     }

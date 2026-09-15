@@ -123,6 +123,22 @@ class PaymentServiceTest extends TestCase
         $this->assertCount(1, $booking->fresh()->events()->where('event_type', Booking::STATUS_CONFIRMED)->get());
     }
 
+    public function test_a_succeeded_outcome_with_a_different_amount_never_confirms_the_booking(): void
+    {
+        Notification::fake();
+        $booking = $this->heldBooking();
+        $payment = app(PaymentService::class)->initiate($booking, 'fake')['payment'];
+
+        app(PaymentService::class)->applyWebhookOutcome(
+            new WebhookOutcome(WebhookOutcome::PAYMENT_SUCCEEDED, $payment->gateway_reference, $payment->amount_cents - 1),
+            'fake',
+        );
+
+        $this->assertSame(Payment::STATUS_FAILED, $payment->fresh()->status);
+        $this->assertSame(Booking::STATUS_HELD, $booking->fresh()->status);
+        $this->assertNull($booking->fresh()->provider_order_id);
+    }
+
     public function test_a_failed_webhook_outcome_returns_the_booking_to_held(): void
     {
         Notification::fake();

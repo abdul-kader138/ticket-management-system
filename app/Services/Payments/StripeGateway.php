@@ -20,7 +20,9 @@ class StripeGateway implements PaymentGatewayContract
 
     public function configured(): bool
     {
-        return filled($this->secretKey()) && filled($this->webhookSecret());
+        return filled($this->secretKey())
+            && filled($this->publishableKey())
+            && filled($this->webhookSecret());
     }
 
     /**
@@ -140,16 +142,16 @@ class StripeGateway implements PaymentGatewayContract
 
     private function secretKey(): ?string
     {
-        return Setting::get('stripe_secret_key');
+        return Setting::get('stripe_secret_key', config('services.stripe.secret'));
     }
 
     private function publishableKey(): ?string
     {
-        return Setting::get('stripe_publishable_key');
+        return Setting::get('stripe_publishable_key', config('services.stripe.key'));
     }
 
     private function webhookSecret(): ?string
     {
-        return Setting::get('stripe_webhook_secret');
+        return Setting::get('stripe_webhook_secret', config('services.stripe.webhook_secret'));
     }
 }

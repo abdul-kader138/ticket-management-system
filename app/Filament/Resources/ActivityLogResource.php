@@ -92,8 +92,16 @@ class ActivityLogResource extends Resource
 
                 Filter::make('created_at')
                     ->form([
-                        DatePicker::make('from'),
-                        DatePicker::make('until'),
+                        DatePicker::make('from')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->placeholder('dd/mm/yyyy'),
+                        DatePicker::make('until')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->placeholder('dd/mm/yyyy'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query

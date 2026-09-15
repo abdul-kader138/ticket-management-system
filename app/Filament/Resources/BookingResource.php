@@ -107,8 +107,16 @@ class BookingResource extends Resource
                 Filter::make('created_at')
                     ->label('Booked between')
                     ->form([
-                        DatePicker::make('booked_from')->native(false),
-                        DatePicker::make('booked_until')->native(false),
+                        DatePicker::make('booked_from')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->placeholder('dd/mm/yyyy'),
+                        DatePicker::make('booked_until')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->placeholder('dd/mm/yyyy'),
                     ])
                     ->query(fn (Builder $query, array $data) => $query
                         ->when($data['booked_from'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '>=', $date))

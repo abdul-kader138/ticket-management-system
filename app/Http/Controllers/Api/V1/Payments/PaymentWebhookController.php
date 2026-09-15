@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Payments;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessPaymentWebhookEvent;
 use App\Models\PaymentWebhookEvent;
+use App\Services\Payments\PaymentException;
 use App\Services\Payments\PaymentGatewayManager;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -22,13 +23,21 @@ class PaymentWebhookController extends Controller
 {
     public function handle(Request $request, string $gateway, PaymentGatewayManager $gateways): Response
     {
-        $driver = $gateways->resolve($gateway);
+        try {
+            $driver = $gateways->resolve($gateway);
+        } catch (PaymentException) {
+            return response('Unknown payment gateway.', 404);
+        }
 
         if (! $driver->verifyWebhookSignature($request)) {
             return response('Invalid signature.', 400);
         }
 
-        $payload = json_decode($request->getContent(), true) ?? [];
+        $payload = json_decode($request->getContent(), true);
+
+        if (! is_array($payload)) {
+            return response('Malformed event.', 400);
+        }
         $eventId = $driver->webhookEventId($payload);
 
         if (! $eventId) {
