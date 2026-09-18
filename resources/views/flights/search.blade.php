@@ -250,18 +250,37 @@
 
                             <div class="lg:w-48 px-4 py-2 border border-[var(--card-border)] border-b-2 border-b-[var(--brand)] rounded-md flex items-center justify-between gap-2">
                                 <div class="w-full">
-                                    <label class="block text-xs text-[var(--muted)]">{{ __('Flight Date') }}</label>
-                                    <input
-                                        type="text"
-                                        inputmode="numeric"
-                                        maxlength="10"
-                                        placeholder="dd/mm/yyyy"
-                                        x-model="leg.dateDisplay"
-                                        @input="updateLegDate(leg, $event.target.value)"
-                                        required
-                                        class="w-full border-0 p-0 mt-0.5 text-sm focus:ring-0"
-                                    >
-                                    <input type="hidden" :name="'legs[' + idx + '][date]'" x-model="leg.date">
+                                    <label :for="'input-' + leg.id + '-date'" class="block text-xs text-[var(--muted)]">{{ __('Flight Date') }}</label>
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            :id="'input-' + leg.id + '-date'"
+                                            x-model="leg.dateDisplay"
+                                            @input="updateLegDate(leg, $event.target)"
+                                            inputmode="numeric"
+                                            maxlength="10"
+                                            placeholder="dd/mm/yyyy"
+                                            pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+                                            required
+                                            class="w-full min-w-0 border-0 p-0 mt-0.5 text-sm focus:ring-0"
+                                        >
+                                        <div class="relative w-6 h-6 shrink-0 rounded focus-within:ring-2 focus-within:ring-[var(--brand)]">
+                                            <svg class="w-5 h-5 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                <rect x="3" y="5" width="18" height="16" rx="2" />
+                                                <path d="M16 3v4M8 3v4M3 11h18" />
+                                            </svg>
+                                            <input
+                                                type="date"
+                                                :name="'legs[' + idx + '][date]'"
+                                                :value="leg.date"
+                                                @click="$el.showPicker?.()"
+                                                @change="selectLegDate(leg, $event.target.value)"
+                                                aria-label="{{ __('Choose flight date') }}"
+                                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                tabindex="0"
+                                            >
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <button
@@ -304,9 +323,9 @@
                             class="absolute z-10 top-full left-0 mt-2 w-64 bg-[var(--card)] border border-[var(--card-border)] rounded-md shadow-lg p-4 space-y-3"
                         >
                             <template x-for="p in [
-                                { key: 'adults', label: @json(__('Adults')), hint: @json(__('12+ years')), min: 1 },
-                                { key: 'children', label: @json(__('Children')), hint: @json(__('2-11 years')), min: 0 },
-                                { key: 'infants', label: @json(__('Infants')), hint: @json(__('Under 2 years')), min: 0 },
+                                { key: 'adults', label: @js(__('Adults')), hint: @js(__('12+ years')), min: 1 },
+                                { key: 'children', label: @js(__('Children')), hint: @js(__('2-11 years')), min: 0 },
+                                { key: 'infants', label: @js(__('Infants')), hint: @js(__('Under 2 years')), min: 0 },
                             ]" :key="p.key">
                                 <div class="flex items-center justify-between">
                                     <div>
@@ -325,8 +344,8 @@
                     </div>
 
                     <template x-for="field in [
-                        { key: 'cabinClass', label: @json(__('Flight Class')), options: cabinClassOptions, name: 'cabin_class' },
-                        { key: 'source', label: @json(__('Sources')), options: sourceOptions, name: 'source' },
+                        { key: 'cabinClass', label: @js(__('Flight Class')), options: cabinClassOptions, name: 'cabin_class' },
+                        { key: 'source', label: @js(__('Sources')), options: sourceOptions, name: 'source' },
                     ]" :key="field.key">
                         <div class="relative border border-[var(--card-border)] border-b-2 border-b-[var(--brand)] rounded-md px-3 py-2" x-on:click.outside="dropdownOpen[field.key] = false">
                             <label :for="'dropdown-btn-' + field.key" class="block text-xs text-[var(--muted)]" x-text="field.label"></label>
@@ -371,8 +390,8 @@
                     </div>
 
                     <template x-for="field in [
-                        { key: 'airline', label: @json(__('Airlines')), options: airlineOptions, name: 'airline' },
-                        { key: 'fareType', label: @json(__('Type')), options: fareTypeOptions, name: 'fare_type' },
+                        { key: 'airline', label: @js(__('Airlines')), options: airlineOptions, name: 'airline' },
+                        { key: 'fareType', label: @js(__('Type')), options: fareTypeOptions, name: 'fare_type' },
                     ]" :key="field.key">
                         <div class="relative border border-[var(--card-border)] border-b-2 border-b-[var(--brand)] rounded-md px-3 py-2" x-on:click.outside="dropdownOpen[field.key] = false">
                             <label :for="'dropdown-btn-' + field.key" class="block text-xs text-[var(--muted)]" x-text="field.label"></label>
@@ -456,6 +475,7 @@
             const today = new Date().toISOString().slice(0, 10);
 
             const formatDate = (isoDate) => {
+                if (!isoDate) return '';
                 const [year, month, day] = isoDate.split('-');
                 return `${day}/${month}/${year}`;
             };
@@ -527,8 +547,15 @@
 
                 init() {},
 
-                updateLegDate(leg, value) {
-                    leg.date = parseDate(value);
+                updateLegDate(leg, input) {
+                    leg.date = parseDate(input.value);
+                    input.setCustomValidity(leg.date || !input.value ? '' : @js(__('Enter a valid date in dd/mm/yyyy format.')));
+                },
+
+                selectLegDate(leg, value) {
+                    leg.date = value;
+                    leg.dateDisplay = formatDate(value);
+                    document.getElementById('input-' + leg.id + '-date')?.setCustomValidity('');
                 },
 
                 filteredOptions(field) {
