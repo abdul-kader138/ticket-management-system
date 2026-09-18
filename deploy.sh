@@ -15,7 +15,7 @@
 set -Eeuo pipefail
 
 # ── Configuration ────────────────────────────────────────────────────────────
-APP_DIR="${APP_DIR:-/var/www/ticket-management-system}"
+APP_DIR="${APP_DIR:-/var/www/tmc}"
 BRANCH="${BRANCH:-main}"
 PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
